@@ -1,0 +1,223 @@
+/*
+ * Global Styles and Variables
+ */
+:root {
+    --color-primary: #FFD700; /* Gold/Yellow for highlights */
+    --color-secondary: #00ADB5; /* Teal for accents */
+    --color-dark: #222831; /* Very Dark Gray/Black for background */
+    --color-dark-light: #393E46; /* Slightly Lighter Dark Gray for cards/surfaces */
+    --color-text: #EEEEEE; /* Light Gray for main text */
+    --color-text-secondary: #AAAAAA; /* Darker Gray for secondary text */
+    --shadow-light: 0 4px 8px rgba(0, 0, 0, 0.2);
+    --shadow-dark: 0 8px 16px rgba(0, 0, 0, 0.4);
+    --border-radius: 8px;
+    --spacing-unit: 1rem;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--color-dark);
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-unit);
+}
+
+/*
+ * Header and Navigation
+ */
+.main-header {
+    background-color: var(--color-dark-light);
+    box-shadow: var(--shadow-dark);
+    padding: calc(var(--spacing-unit) * 1.5) 0;
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+.main-header .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-unit);
+}
+
+.app-title {
+    font-size: 2.5rem;
+    color: var(--color-primary);
+    text-align: center;
+}
+
+.search-form {
+    display: flex;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: var(--shadow-light);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.search-input {
+    flex-grow: 1;
+    padding: var(--spacing-unit);
+    font-size: 1rem;
+    border: none;
+    background-color: var(--color-dark);
+    color: var(--color-text);
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: var(--color-text-secondary);
+}
+
+.search-button {
+    padding: var(--spacing-unit);
+    background-color: var(--color-secondary);
+    color: var(--color-dark);
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 1.2rem;
+}
+
+.search-button:hover {
+    background-color: var(--color-primary);
+}
+
+/*
+ * Movie List and Cards
+ */
+.movie-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: calc(var(--spacing-unit) * 2);
+    padding: calc(var(--spacing-unit) * 2) 0;
+}
+
+.movie-card {
+    background-color: var(--color-dark-light);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-light);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.movie-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-dark);
+}
+
+.movie-poster {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    min-height: 375px; /* Aspect ratio for posters */
+}
+
+.movie-info {
+    padding: var(--spacing-unit);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.movie-title {
+    font-size: 1.4rem;
+    color: var(--color-text);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.movie-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-primary);
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+}
+
+.movie-rating i {
+    color: var(--color-primary);
+}
+
+.movie-release-date {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin-top: 0.5rem;
+}
+
+/*
+ * Status Messages (Loading/Error/No Results)
+ */
+.status-message {
+    text-align: center;
+    padding: calc(var(--spacing-unit) * 4);
+    font-size: 1.5rem;
+    color: var(--color-text-secondary);
+}
+
+.status-message.error {
+    color: #E74C3C; /* Red for errors */
+    font-weight: bold;
+}
+
+/*
+ * Footer
+ */
+.main-footer {
+    background-color: var(--color-dark-light);
+    padding: var(--spacing-unit);
+    text-align: center;
+    border-top: 1px solid var(--color-dark);
+    margin-top: calc(var(--spacing-unit) * 2);
+}
+
+.main-footer p {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+.main-footer a {
+    color: var(--color-secondary);
+    text-decoration: none;
+}
+
+.main-footer a:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+
+/*
+ * Responsiveness (Mobile-first approach)
+ */
+@media (min-width: 768px) {
+    .main-header .container {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .app-title {
+        text-align: left;
+    }
+
+    .search-form {
+        max-width: 400px;
+    }
+}
+
