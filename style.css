@@ -178,6 +178,21 @@ body {
 }
 
 /*
+ * Loading Indicator for Infinity Scroll
+ */
+.loading-indicator {
+    text-align: center;
+    padding: var(--spacing-unit);
+    color: var(--color-secondary);
+    font-size: 1.2rem;
+    grid-column: 1 / -1;
+}
+
+.loading-indicator i {
+    margin-right: 0.5rem;
+}
+
+/*
  * Footer
  */
 .main-footer {

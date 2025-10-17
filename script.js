@@ -13,6 +13,13 @@ const searchInput = document.getElementById('searchInput');
 const movieListContainer = document.getElementById('movieList');
 const statusMessageElement = document.getElementById('statusMessage');
 
+// Infinity scroll state variables
+let currentPage = 1;
+let isLoading = false;
+let currentSearchQuery = '';
+let totalPages = 0;
+let isFetchingPopularMovies = true;
+
 /**
  * Displays a status message (loading, error, or no results).
  * @param {string} message - The message to display.
@@ -67,10 +74,24 @@ const createMovieCard = (movie) => {
 /**
  * Fetches movies from the TMDB API and displays them.
  * @param {string} url - The API endpoint URL to fetch from.
+ * @param {boolean} append - Whether to append movies to existing list or replace them.
  */
-const fetchAndDisplayMovies = async (url) => {
-    displayStatusMessage('Loading movies...');
-    hideStatusMessage(); // Hide loading message initially to prevent flicker
+const fetchAndDisplayMovies = async (url, append = false) => {
+    if (isLoading) return;
+
+    isLoading = true;
+
+    if (!append) {
+        currentPage = 1;
+        displayStatusMessage('Loading movies...');
+        hideStatusMessage(); // Hide loading message initially to prevent flicker
+    } else {
+        // Show loading indicator at the bottom when appending
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'loading-indicator';
+        loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading more movies...';
+        movieListContainer.appendChild(loadingIndicator);
+    }
 
     try {
         const response = await fetch(url);
@@ -82,20 +103,47 @@ const fetchAndDisplayMovies = async (url) => {
 
         const data = await response.json();
         const movies = data.results;
+        totalPages = data.total_pages;
 
-        if (movies.length === 0) {
+        // Remove loading indicator if it exists
+        const loadingIndicator = document.querySelector('.loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.remove();
+        }
+
+        if (movies.length === 0 && !append) {
             displayStatusMessage('No movies found. Try a different search term.', false);
+            isLoading = false;
             return;
         }
 
-        // Clear previous movies and display new ones
-        movieListContainer.innerHTML = movies.map(createMovieCard).join('');
-        hideStatusMessage();
+        if (append) {
+            // Append new movies to existing list
+            const movieCards = movies.map(createMovieCard).join('');
+            movieListContainer.insertAdjacentHTML('beforeend', movieCards);
+        } else {
+            // Clear previous movies and display new ones
+            movieListContainer.innerHTML = movies.map(createMovieCard).join('');
+            hideStatusMessage();
+        }
+
+        isLoading = false;
 
     } catch (error) {
         // Error handling for network or unexpected errors
         console.error('Fetch error:', error);
-        displayStatusMessage(`An error occurred while fetching data: ${error.message}. Please try again later.`, true);
+
+        // Remove loading indicator if it exists
+        const loadingIndicator = document.querySelector('.loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.remove();
+        }
+
+        if (!append) {
+            displayStatusMessage(`An error occurred while fetching data: ${error.message}. Please try again later.`, true);
+        }
+
+        isLoading = false;
     }
 };
 
@@ -107,21 +155,45 @@ const handleSearch = (event) => {
     event.preventDefault(); // Prevent default form submission
 
     const query = searchInput.value.trim();
+    currentSearchQuery = query;
 
     if (query) {
         // Grab different data from the API (user interaction)
-        const searchUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(query)}`;
+        isFetchingPopularMovies = false;
+        const searchUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(query)}&page=1`;
         fetchAndDisplayMovies(searchUrl);
     } else {
         // If search is empty, show popular movies again
-        fetchAndDisplayMovies(POPULAR_MOVIES_URL);
+        isFetchingPopularMovies = true;
+        fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
     }
 };
 
 // Event Listeners
 searchForm.addEventListener('submit', handleSearch);
 
+// Infinity scroll implementation
+window.addEventListener('scroll', () => {
+    // Check if we're near the bottom of the page
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+        // If we're not already loading and there are more pages to load
+        if (!isLoading && currentPage < totalPages) {
+            currentPage++;
+
+            let nextPageUrl;
+            if (isFetchingPopularMovies) {
+                nextPageUrl = `${POPULAR_MOVIES_URL}&page=${currentPage}`;
+            } else {
+                nextPageUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}&page=${currentPage}`;
+            }
+
+            fetchAndDisplayMovies(nextPageUrl, true);
+        }
+    }
+});
+
 // Initial load: Fetch and display popular movies
 document.addEventListener('DOMContentLoaded', () => {
-    fetchAndDisplayMovies(POPULAR_MOVIES_URL);
+    isFetchingPopularMovies = true;
+    fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
 });
