@@ -2,10 +2,16 @@
 const API_KEY = '5b40b0f5b10231d23aac66a5994c4c05';
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original';
 
 // API Endpoints
 const POPULAR_MOVIES_URL = `${BASE_URL}/movie/popular?api_key=${API_KEY}`;
 const SEARCH_MOVIES_URL = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=`;
+const GENRES_URL = `${BASE_URL}/genre/movie/list?api_key=${API_KEY}`;
+
+// Genre Mapping
+let genreMap = {};
+let selectedGenres = [];
 
 // DOM Elements (using camelCase)
 const searchForm = document.getElementById('searchForm');
@@ -14,6 +20,72 @@ const movieListContainer = document.getElementById('movieList');
 const statusMessageElement = document.getElementById('statusMessage');
 const favoritesToggle = document.getElementById('favoritesToggle');
 const appTitle = document.getElementById('appTitle');
+
+// Create UI elements
+const createBackToTopButton = () => {
+    const button = document.createElement('button');
+    button.className = 'back-to-top';
+    button.innerHTML = '<i class="fas fa-arrow-up" aria-hidden="true"></i>';
+    button.setAttribute('aria-label', 'Back to top');
+    document.body.appendChild(button);
+    return button;
+};
+
+const backToTopButton = createBackToTopButton();
+
+// Create genre filter container
+const createGenreFilterContainer = () => {
+    const container = document.createElement('div');
+    container.className = 'genre-filter-container';
+    container.id = 'genreFilter';
+    container.setAttribute('aria-label', 'Filter movies by genre');
+    container.setAttribute('role', 'group');
+    return container;
+};
+
+// Create genre filter toggle button
+const createGenreFilterToggle = () => {
+    const toggle = document.createElement('button');
+    toggle.className = 'genre-filter-toggle';
+    toggle.innerHTML = '<i class="fas fa-chevron-up"></i> Filter by Genre';
+    toggle.setAttribute('aria-label', 'Toggle genre filter visibility');
+    toggle.setAttribute('aria-expanded', 'true');
+
+    toggle.addEventListener('click', () => {
+        genreFilterContainer.classList.toggle('hidden');
+        toggle.classList.toggle('collapsed');
+
+        // Update aria-expanded attribute
+        const isExpanded = !genreFilterContainer.classList.contains('hidden');
+        toggle.setAttribute('aria-expanded', isExpanded);
+
+        // Update button text
+        if (isExpanded) {
+            toggle.innerHTML = '<i class="fas fa-chevron-up"></i> Filter by Genre';
+        } else {
+            toggle.innerHTML = '<i class="fas fa-chevron-down"></i> Show Genre Filter';
+        }
+    });
+
+    return toggle;
+};
+
+const genreFilterContainer = createGenreFilterContainer();
+const genreFilterToggle = createGenreFilterToggle();
+
+// Insert toggle and container before movie list
+movieListContainer.parentNode.insertBefore(genreFilterToggle, movieListContainer);
+movieListContainer.parentNode.insertBefore(genreFilterContainer, movieListContainer);
+
+// Add scroll listener to header
+window.addEventListener('scroll', () => {
+    const header = document.querySelector('.main-header');
+    if (window.scrollY > 50) {
+        header.classList.add('scrolled');
+    } else {
+        header.classList.remove('scrolled');
+    }
+});
 
 // Infinity scroll state variables
 let currentPage = 1;
@@ -26,24 +98,21 @@ let isFetchingPopularMovies = true;
 let isShowingFavorites = false;
 let favoriteMovies = [];
 
-/**
- * Displays a status message (loading, error, or no results).
- * @param {string} message - The message to display.
- * @param {boolean} isError - Whether the message is an error.
- */
 const displayStatusMessage = (message, isError = false) => {
-    movieListContainer.innerHTML = ''; // Clear movie list
+    movieListContainer.innerHTML = '';
     statusMessageElement.textContent = message;
-    statusMessageElement.className = 'status-message'; // Reset class
-    if (isError) {
-        statusMessageElement.classList.add('error');
-    }
+    statusMessageElement.className = isError ? 'status-message error' : 'status-message';
     statusMessageElement.style.display = 'block';
 };
 
-/**
- * Hides the status message.
- */
+const displaySkeletonCards = (count = 8) => {
+    movieListContainer.innerHTML = '';
+    const skeletonHTML = Array(count).fill('').map(() => 
+        `<div class="movie-card skeleton-card"><div class="skeleton"></div></div>`
+    ).join('');
+    movieListContainer.innerHTML = skeletonHTML;
+};
+
 const hideStatusMessage = () => {
     statusMessageElement.style.display = 'none';
     statusMessageElement.textContent = '';
@@ -59,18 +128,22 @@ const createMovieCard = (movie) => {
     const title = movie.title || 'Untitled';
     const releaseDate = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
     const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
-    const genreIds = movie.genre_ids ? movie.genre_ids.slice(0, 3).join(', ') : '';
+
+    // Get genre names from genre IDs
+    const genres = movie.genre_ids 
+        ? movie.genre_ids.slice(0, 3).map(id => genreMap[id] || '').filter(Boolean).join(', ')
+        : (movie.genres ? movie.genres.slice(0, 3).map(g => g.name).join(', ') : '');
 
     return `
         <div class="movie-card" data-movie-id="${movie.id}">
             <div class="movie-poster-container">
                 <img src="${posterPath}" alt="${title} Poster" class="movie-poster" loading="lazy">
                 <div class="movie-overlay">
-                    <button class="add-to-favorites" title="Add to favorites">
-                        <i class="far fa-heart"></i>
+                    <button class="add-to-favorites" title="Add to favorites" aria-label="Add ${title} to favorites">
+                        <i class="far fa-heart" aria-hidden="true"></i>
                     </button>
-                    <button class="movie-details" title="View details">
-                        <i class="fas fa-info-circle"></i>
+                    <button class="movie-details" title="View details" aria-label="View details for ${title}">
+                        <i class="fas fa-info-circle" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
@@ -78,9 +151,10 @@ const createMovieCard = (movie) => {
                 <div>
                     <h3 class="movie-title">${title}</h3>
                     <p class="movie-release-date">Release: ${releaseDate}</p>
+                    ${genres ? `<p class="movie-genres">${genres}</p>` : ''}
                 </div>
                 <div class="movie-rating">
-                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star" aria-hidden="true"></i>
                     <span>${rating}</span>
                 </div>
             </div>
@@ -88,11 +162,6 @@ const createMovieCard = (movie) => {
     `;
 };
 
-/**
- * Fetches movies from the TMDB API and displays them.
- * @param {string} url - The API endpoint URL to fetch from.
- * @param {boolean} append - Whether to append movies to existing list or replace them.
- */
 const fetchAndDisplayMovies = async (url, append = false) => {
     if (isLoading) return;
 
@@ -102,6 +171,7 @@ const fetchAndDisplayMovies = async (url, append = false) => {
         currentPage = 1;
         displayStatusMessage('Loading movies...');
         hideStatusMessage(); // Hide loading message initially to prevent flicker
+        displaySkeletonCards(); // Show skeleton cards for better UX
     } else {
         // Show loading indicator at the bottom when appending
         const loadingIndicator = document.createElement('div');
@@ -164,10 +234,6 @@ const fetchAndDisplayMovies = async (url, append = false) => {
     }
 };
 
-/**
- * Fetches favorite movies from the TMDB API and displays them.
- * @param {Array} movieIds - Array of movie IDs to fetch.
- */
 const fetchAndDisplayFavoriteMovies = async (movieIds) => {
     if (isLoading || !movieIds || movieIds.length === 0) return;
 
@@ -175,8 +241,9 @@ const fetchAndDisplayFavoriteMovies = async (movieIds) => {
     displayStatusMessage('Loading favorite movies...');
     hideStatusMessage(); // Hide loading message initially to prevent flicker
 
-    // Clear previous movies
+    // Clear previous movies and show skeleton loading
     movieListContainer.innerHTML = '';
+    displaySkeletonCards();
 
     try {
         favoriteMovies = [];
@@ -229,9 +296,6 @@ const fetchAndDisplayFavoriteMovies = async (movieIds) => {
     }
 };
 
-/**
- * Updates the favorites count badge on the favorites toggle button.
- */
 const updateFavoritesCount = () => {
     const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
     const count = favorites.length;
@@ -251,23 +315,16 @@ const updateFavoritesCount = () => {
     }
 };
 
-/**
- * Handles the search form submission.
- * @param {Event} event - The form submission event.
- */
 const handleSearch = (event) => {
-    event.preventDefault(); // Prevent default form submission
-
+    event.preventDefault();
     const query = searchInput.value.trim();
     currentSearchQuery = query;
 
     if (query) {
-        // Grab different data from the API (user interaction)
         isFetchingPopularMovies = false;
         const searchUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(query)}&page=1`;
         fetchAndDisplayMovies(searchUrl);
     } else {
-        // If search is empty, show popular movies again
         isFetchingPopularMovies = true;
         fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
     }
@@ -373,10 +430,6 @@ movieListContainer.addEventListener('click', (event) => {
     }
 });
 
-/**
- * Shows a modal with movie details
- * @param {string} movieId - The ID of the movie to show details for
- */
 const showMovieDetailsModal = (movieId) => {
     // Create modal overlay
     const modalOverlay = document.createElement('div');
@@ -386,7 +439,7 @@ const showMovieDetailsModal = (movieId) => {
 
     // Create modal content
     const modalContent = document.createElement('div');
-    modalContent.className = 'modal-content';
+    modalContent.className = 'modal-content movie-details-modal';
     modalContent.style.transform = 'scale(0.8)';
     modalContent.style.transition = 'transform var(--transition-medium)';
 
@@ -394,7 +447,7 @@ const showMovieDetailsModal = (movieId) => {
     modalContent.innerHTML = `
         <div class="modal-header">
             <h2>Movie Details</h2>
-            <button class="modal-close">&times;</button>
+            <button class="modal-close" aria-label="Close modal">&times;</button>
         </div>
         <div class="modal-body">
             <p>Loading details for movie ID: ${movieId}...</p>
@@ -428,10 +481,6 @@ const showMovieDetailsModal = (movieId) => {
     fetchMovieDetails(movieId, modalContent);
 };
 
-/**
- * Closes a modal with animation
- * @param {HTMLElement} modalOverlay - The modal overlay element
- */
 const closeModal = (modalOverlay) => {
     const modalContent = modalOverlay.querySelector('.modal-content');
     modalOverlay.style.opacity = '0';
@@ -442,11 +491,6 @@ const closeModal = (modalOverlay) => {
     }, 300);
 };
 
-/**
- * Fetches movie details from the API
- * @param {string} movieId - The ID of the movie to fetch details for
- * @param {HTMLElement} modalContent - The modal content element to update
- */
 const fetchMovieDetails = async (movieId, modalContent) => {
     const modalBody = modalContent.querySelector('.modal-body');
 
@@ -516,8 +560,16 @@ const fetchMovieDetails = async (movieId, modalContent) => {
             `;
         }
 
+        // Create backdrop image HTML
+        const backdropHtml = movie.backdrop_path 
+            ? `<div class="movie-details-backdrop">
+                 <img src="${BACKDROP_BASE_URL}${movie.backdrop_path}" alt="${movie.title} Backdrop">
+               </div>`
+            : '';
+
         // Update modal content with movie details
         modalBody.innerHTML = `
+            ${backdropHtml}
             <div class="movie-details-container">
                 <div class="movie-details-poster">
                     <img src="${movie.poster_path ? `${IMAGE_BASE_URL}${movie.poster_path}` : 'https://via.placeholder.com/300x450?text=No+Image'}" alt="${movie.title} Poster">
@@ -569,10 +621,208 @@ window.addEventListener('scroll', () => {
     }
 });
 
+// Fetch genres from TMDB API
+const fetchGenres = async () => {
+    try {
+        const response = await fetch(GENRES_URL);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+
+        // Create genre map for easy lookup
+        data.genres.forEach(genre => {
+            genreMap[genre.id] = genre.name;
+        });
+
+        // Create genre filter buttons
+        createGenreFilterButtons(data.genres);
+    } catch (error) {
+        console.error('Error fetching genres:', error);
+    }
+};
+
+// Create genre filter buttons
+const createGenreFilterButtons = (genres) => {
+    genreFilterContainer.innerHTML = '';
+
+    // Create header section
+    const headerElement = document.createElement('div');
+    headerElement.className = 'genre-filter-header';
+
+    // Create title element
+    const titleElement = document.createElement('div');
+    titleElement.className = 'genre-filter-title';
+    titleElement.innerHTML = '<i class="fas fa-filter"></i> Filter by Genre';
+
+    // Create clear filters button
+    const clearFiltersButton = document.createElement('button');
+    clearFiltersButton.className = 'clear-filters';
+    clearFiltersButton.textContent = 'Clear All';
+    clearFiltersButton.setAttribute('aria-label', 'Clear all genre filters');
+    clearFiltersButton.addEventListener('click', () => {
+        selectedGenres = [];
+        document.querySelectorAll('.genre-filter-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector('[data-genre-id="all"]').classList.add('active');
+
+        // Update the count badge
+        updateGenreCountBadge();
+
+        if (currentSearchQuery) {
+            const searchUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}&page=1`;
+            fetchAndDisplayMovies(searchUrl);
+        } else {
+            fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
+        }
+    });
+
+    headerElement.appendChild(titleElement);
+    headerElement.appendChild(clearFiltersButton);
+    genreFilterContainer.appendChild(headerElement);
+
+    // Create list container for genre buttons
+    const listContainer = document.createElement('div');
+    listContainer.className = 'genre-filter-list';
+
+    // Add "All" button
+    const allButton = document.createElement('button');
+    allButton.className = 'genre-filter-button active';
+    allButton.textContent = 'All';
+    allButton.setAttribute('data-genre-id', 'all');
+    allButton.setAttribute('aria-label', 'Show all movies');
+    allButton.addEventListener('click', () => {
+        selectedGenres = [];
+        document.querySelectorAll('.genre-filter-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        allButton.classList.add('active');
+
+        // Update the count badge
+        updateGenreCountBadge();
+
+        if (currentSearchQuery) {
+            const searchUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}&page=1`;
+            fetchAndDisplayMovies(searchUrl);
+        } else {
+            fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
+        }
+    });
+    listContainer.appendChild(allButton);
+
+    // Add genre buttons
+    genres.forEach(genre => {
+        const button = document.createElement('button');
+        button.className = 'genre-filter-button';
+        button.textContent = genre.name;
+        button.setAttribute('data-genre-id', genre.id);
+        button.setAttribute('aria-label', `Filter by ${genre.name}`);
+
+        button.addEventListener('click', () => {
+            // Toggle genre selection
+            const genreId = genre.id.toString();
+            const index = selectedGenres.indexOf(genreId);
+
+            if (index > -1) {
+                selectedGenres.splice(index, 1);
+                button.classList.remove('active');
+
+                // If no genres selected, select "All"
+                if (selectedGenres.length === 0) {
+                    allButton.classList.add('active');
+                }
+            } else {
+                selectedGenres.push(genreId);
+                button.classList.add('active');
+                allButton.classList.remove('active');
+            }
+
+            // Update the genre count badge
+            updateGenreCountBadge();
+
+            // Filter movies based on selected genres
+            filterMoviesByGenres();
+        });
+
+        listContainer.appendChild(button);
+    });
+
+    genreFilterContainer.appendChild(listContainer);
+};
+
+// Update genre filter count badge
+const updateGenreCountBadge = () => {
+    const countElement = document.querySelector('.genre-filter-count');
+    if (countElement) {
+        countElement.remove();
+    }
+
+    if (selectedGenres.length > 0) {
+        const countBadge = document.createElement('span');
+        countBadge.className = 'genre-filter-count';
+        countBadge.textContent = selectedGenres.length;
+        countBadge.setAttribute('aria-label', `${selectedGenres.length} genres selected`);
+        document.querySelector('.genre-filter-title').appendChild(countBadge);
+    }
+};
+
+// Filter movies by selected genres
+const filterMoviesByGenres = () => {
+    // Update the count badge
+    updateGenreCountBadge();
+
+    if (selectedGenres.length === 0) {
+        // If no genres selected, show all movies
+        if (currentSearchQuery) {
+            const searchUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}&page=1`;
+            fetchAndDisplayMovies(searchUrl);
+        } else {
+            fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
+        }
+        return;
+    }
+
+    displayStatusMessage('Filtering movies by genre...');
+    hideStatusMessage();
+
+    // Fetch movies with selected genres
+    const genreQuery = selectedGenres.join(',');
+    let filterUrl;
+
+    if (currentSearchQuery) {
+        filterUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}&with_genres=${genreQuery}&page=1`;
+    } else {
+        filterUrl = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=${genreQuery}&page=1`;
+    }
+
+    fetchAndDisplayMovies(filterUrl);
+};
+
+// Show/hide back to top button based on scroll position
+window.addEventListener('scroll', () => {
+    if (window.pageYOffset > 300) {
+        backToTopButton.classList.add('visible');
+    } else {
+        backToTopButton.classList.remove('visible');
+    }
+});
+
+// Scroll to top when button is clicked
+backToTopButton.addEventListener('click', () => {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+});
+
 // Initial load: Fetch and display popular movies
 document.addEventListener('DOMContentLoaded', () => {
     isFetchingPopularMovies = true;
     fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
+
+    // Fetch genres
+    fetchGenres();
 
     // Update favorites count badge
     updateFavoritesCount();
