@@ -2,16 +2,16 @@
  * Global Styles and Variables
  */
 :root {
-    --color-primary: #FFD700; /* Gold/Yellow for highlights */
-    --color-secondary: #00ADB5; /* Teal for accents */
-    --color-dark: #222831; /* Very Dark Gray/Black for background */
-    --color-dark-light: #393E46; /* Slightly Lighter Dark Gray for cards/surfaces */
-    --color-text: #EEEEEE; /* Light Gray for main text */
-    --color-text-secondary: #AAAAAA; /* Darker Gray for secondary text */
-    --shadow-light: 0 4px 8px rgba(0, 0, 0, 0.2);
-    --shadow-dark: 0 8px 16px rgba(0, 0, 0, 0.4);
-    --shadow-medium: 0 6px 12px rgba(0, 0, 0, 0.3);
-    --border-radius: 12px;
+    --color-primary: #E50914; /* Netflix Red */
+    --color-secondary: #221F1F; /* Netflix Black */
+    --color-dark: #141414; /* Very Dark Black/Gray for background */
+    --color-dark-light: #333333; /* Slightly Lighter Black for cards/surfaces */
+    --color-text: #FFFFFF; /* White for main text */
+    --color-text-secondary: #B3B3B3; /* Light Gray for secondary text */
+    --shadow-light: 0 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-dark: 0 8px 16px rgba(0, 0, 0, 0.6);
+    --shadow-medium: 0 6px 12px rgba(0, 0, 0, 0.5);
+    --border-radius: 4px; /* Less rounded edges like Netflix */
     --spacing-unit: 1rem;
     --transition-fast: 0.2s ease;
     --transition-medium: 0.3s ease;
@@ -43,8 +43,8 @@ body {
  * Header and Navigation
  */
 .main-header {
-    background-color: var(--color-dark-light);
-    box-shadow: var(--shadow-dark);
+    background-color: var(--color-secondary);
+    box-shadow: none;
     padding: calc(var(--spacing-unit) * 1.5) 0;
     margin-bottom: calc(var(--spacing-unit) * 2);
     position: sticky;
@@ -74,11 +74,11 @@ body {
     display: flex;
     align-items: center;
     gap: calc(var(--spacing-unit) * 0.5);
-    background-color: rgba(255, 215, 0, 0.1);
-    border: 1px solid var(--color-primary);
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: var(--border-radius);
     padding: calc(var(--spacing-unit) * 0.6) calc(var(--spacing-unit) * 1.2);
-    color: var(--color-primary);
+    color: var(--color-text);
     cursor: pointer;
     transition: all var(--transition-medium);
     font-size: 1rem;
@@ -86,13 +86,14 @@ body {
 }
 
 .favorites-toggle:hover {
-    background-color: rgba(255, 215, 0, 0.2);
-    transform: translateY(-2px);
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
 }
 
 .favorites-toggle.active {
     background-color: var(--color-primary);
-    color: var(--color-dark);
+    color: white;
+    border-color: var(--color-primary);
 }
 
 .favorites-toggle i {
@@ -117,13 +118,15 @@ body {
     font-size: 2.5rem;
     color: var(--color-primary);
     text-align: center;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    transition: transform var(--transition-fast), text-shadow var(--transition-fast);
+    font-weight: bold;
+    letter-spacing: -1px;
+    text-transform: uppercase;
+    transition: transform var(--transition-fast);
+    text-decoration: none;
 }
 
 .app-title:hover {
-    transform: scale(1.05);
-    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transform: scale(1.02);
 }
 
 .search-form {
@@ -145,15 +148,16 @@ body {
     flex-grow: 1;
     padding: var(--spacing-unit);
     font-size: 1rem;
-    border: none;
-    background-color: var(--color-dark);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(0, 0, 0, 0.4);
     color: var(--color-text);
     outline: none;
-    transition: background-color var(--transition-fast), color var(--transition-fast);
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .search-input:focus {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(0, 0, 0, 0.6);
+    border-color: var(--color-primary);
 }
 
 .search-input::placeholder {
@@ -167,10 +171,11 @@ body {
 
 .search-button {
     padding: var(--spacing-unit);
-    background-color: var(--color-secondary);
-    color: var(--color-dark);
+    background-color: var(--color-primary);
+    color: white;
     border: none;
     cursor: pointer;
+    font-weight: 600;
     transition: all var(--transition-medium);
     font-size: 1.2rem;
     display: flex;
@@ -223,7 +228,7 @@ body {
  */
 .movie-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 300px));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 250px));
     gap: calc(var(--spacing-unit) * 2);
     padding: calc(var(--spacing-unit) * 2) 0;
     animation: fadeIn var(--transition-slow) ease-in-out;
@@ -231,10 +236,10 @@ body {
 }
 
 .movie-card {
-    background-color: var(--color-dark-light);
+    background-color: transparent;
     border-radius: var(--border-radius);
     overflow: hidden;
-    box-shadow: var(--shadow-light);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
     transition: all var(--transition-medium);
     display: flex;
     flex-direction: column;
@@ -255,8 +260,9 @@ body {
 }
 
 .movie-card:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--shadow-dark);
+    transform: scale(1.05);
+    box-shadow: 0 0 0 2px var(--color-primary);
+    z-index: 10;
 }
 
 .movie-poster-container {
@@ -270,12 +276,11 @@ body {
     display: block;
     object-fit: cover;
     min-height: 375px; /* Aspect ratio for posters */
-    transition: transform var(--transition-medium), filter var(--transition-fast);
+    transition: transform var(--transition-medium);
 }
 
 .movie-card:hover .movie-poster {
     transform: scale(1.05);
-    filter: brightness(1.1);
 }
 
 .movie-overlay {
@@ -284,7 +289,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.1) 100%);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -786,6 +791,43 @@ html {
 .movie-details-overview h4 {
     color: var(--color-primary);
     margin-bottom: calc(var(--spacing-unit) * 0.5);
+}
+
+/* YouTube Trailer Styles */
+.movie-trailer {
+    margin-top: calc(var(--spacing-unit) * 1.5);
+}
+
+.movie-trailer h3 {
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-unit);
+}
+
+.video-container {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 Aspect Ratio */
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--border-radius);
+}
+
+/* Phone screens (max-width: 767px) */
+@media (max-width: 767px) {
+    .movie-trailer {
+        margin-top: var(--spacing-unit);
+    }
+
+    .movie-trailer h3 {
+        font-size: 1.2rem;
+    }
 }
 
 .error-message {

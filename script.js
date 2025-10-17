@@ -13,6 +13,7 @@ const searchInput = document.getElementById('searchInput');
 const movieListContainer = document.getElementById('movieList');
 const statusMessageElement = document.getElementById('statusMessage');
 const favoritesToggle = document.getElementById('favoritesToggle');
+const appTitle = document.getElementById('appTitle');
 
 // Infinity scroll state variables
 let currentPage = 1;
@@ -291,6 +292,12 @@ favoritesToggle.addEventListener('click', () => {
     }
 });
 
+// App title click event listener
+appTitle.addEventListener('click', (e) => {
+    e.preventDefault();
+    location.reload();
+});
+
 // Event delegation for movie card buttons
 movieListContainer.addEventListener('click', (event) => {
     const target = event.target;
@@ -452,6 +459,63 @@ const fetchMovieDetails = async (movieId, modalContent) => {
 
         const movie = await response.json();
 
+        // Extract release year for YouTube search
+        const releaseYear = movie.release_date ? movie.release_date.substring(0, 4) : '';
+
+        // Fetch YouTube trailer
+        let trailerHtml = '';
+        try {
+            // Search for official trailer on YouTube
+            const searchQuery = `${movie.title} ${releaseYear} official trailer`;
+            console.log('Searching for trailer with query:', searchQuery);
+            const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&maxResults=1&type=video&key=AIzaSyC3hIy9_Kejs-azrf5bRYw_JZRgCLAVijE`);
+
+            if (youtubeResponse.ok) {
+                const youtubeData = await youtubeResponse.json();
+                console.log('YouTube API response:', youtubeData);
+
+                if (youtubeData.items && youtubeData.items.length > 0) {
+                    const videoId = youtubeData.items[0].id.videoId;
+                    console.log('Found video ID:', videoId);
+                    trailerHtml = `
+                        <div class="movie-trailer">
+                            <h3>Official Trailer</h3>
+                            <div class="video-container">
+                                <iframe 
+                                    src="https://www.youtube.com/embed/${videoId}" 
+                                    title="${movie.title} Official Trailer" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen>
+                                </iframe>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    console.log('No trailer found for:', searchQuery);
+                    trailerHtml = `
+                        <div class="movie-trailer">
+                            <h3>Official Trailer</h3>
+                            <p>Trailer unavailable</p>
+                        </div>
+                    `;
+                }
+            } else {
+                console.log('YouTube API error status:', youtubeResponse.status);
+                const errorText = await youtubeResponse.text();
+                console.log('YouTube API error response:', errorText);
+                throw new Error(`YouTube API error: ${youtubeResponse.status}`);
+            }
+        } catch (error) {
+            console.error('Error fetching YouTube trailer:', error);
+            trailerHtml = `
+                <div class="movie-trailer">
+                    <h3>Official Trailer</h3>
+                    <p>Trailer unavailable</p>
+                </div>
+            `;
+        }
+
         // Update modal content with movie details
         modalBody.innerHTML = `
             <div class="movie-details-container">
@@ -475,6 +539,7 @@ const fetchMovieDetails = async (movieId, modalContent) => {
                     </div>
                 </div>
             </div>
+            ${trailerHtml}
         `;
 
     } catch (error) {
