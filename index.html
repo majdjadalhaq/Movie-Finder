@@ -11,10 +11,16 @@
     <header class="main-header">
         <div class="container">
             <h1 class="app-title">Movie Finder</h1>
-            <form id="searchForm" class="search-form">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search for a movie..." autocomplete="off">
-                <button type="submit" class="search-button"><i class="fas fa-search"></i></button>
-            </form>
+            <div class="header-controls">
+                <form id="searchForm" class="search-form">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search for a movie..." autocomplete="off">
+                    <button type="submit" class="search-button"><i class="fas fa-search"></i></button>
+                </form>
+                <button id="favoritesToggle" class="favorites-toggle">
+                    <i class="fas fa-heart"></i>
+                    <span>My Favorites</span>
+                </button>
+            </div>
         </div>
     </header>
 
