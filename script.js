@@ -977,4 +977,35 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }, 1000);
+    
+    // Keyboard navigation handler
+    document.addEventListener('keydown', (event) => {
+        // Handle Escape key
+        if (event.key === 'Escape' || event.keyCode === 27) {
+            // Get all modals in order of appearance
+            const modals = document.querySelectorAll('.modal-overlay');
+            if (modals.length > 0) {
+                // Close the most recently opened modal (last in DOM)
+                closeModal(modals[modals.length - 1]);
+            } else if (isShowingFavorites) {
+                // Return from favorites to main view
+                favoritesToggle.click();
+            } else if (currentSearchQuery) {
+                // Return from search results to popular movies
+                clearSearch();
+            }
+            return;
+        }
+        
+        // Handle Enter key
+        if (event.key === 'Enter' || event.keyCode === 13) {
+            // Check if search input is focused
+            if (document.activeElement === searchInput) {
+                // Trigger search
+                event.preventDefault();
+                handleSearch(event);
+            }
+            // Don't prevent default for other elements to allow normal form submission
+        }
+    });
 });
