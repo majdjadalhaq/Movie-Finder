@@ -3,11 +3,13 @@ const API_KEY = '5b40b0f5b10231d23aac66a5994c4c05';
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original';
+const YOUTUBE_API_KEY = 'AIzaSyC3hIy9_Kejs-azrf5bRYw_JZRgCLAVijE';
 
 // API Endpoints
 const POPULAR_MOVIES_URL = `${BASE_URL}/movie/popular?api_key=${API_KEY}`;
 const SEARCH_MOVIES_URL = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=`;
 const GENRES_URL = `${BASE_URL}/genre/movie/list?api_key=${API_KEY}`;
+const YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search?part=snippet';
 
 // Genre Mapping
 let genreMap = {};
@@ -131,7 +133,7 @@ const createMovieCard = (movie) => {
 
     // Get genre names from genre IDs
     const genres = movie.genre_ids 
-        ? movie.genre_ids.slice(0, 3).map(id => genreMap[id] || '').filter(Boolean).join(', ')
+        ? movie.genre_ids.slice(0, 3).map(id => genreMap[id]).filter(Boolean).join(', ')
         : (movie.genres ? movie.genres.slice(0, 3).map(g => g.name).join(', ') : '');
 
     return `
@@ -164,16 +166,14 @@ const createMovieCard = (movie) => {
 
 const fetchAndDisplayMovies = async (url, append = false) => {
     if (isLoading) return;
-
     isLoading = true;
 
     if (!append) {
         currentPage = 1;
         displayStatusMessage('Loading movies...');
-        hideStatusMessage(); // Hide loading message initially to prevent flicker
-        displaySkeletonCards(); // Show skeleton cards for better UX
+        hideStatusMessage();
+        displaySkeletonCards();
     } else {
-        // Show loading indicator at the bottom when appending
         const loadingIndicator = document.createElement('div');
         loadingIndicator.className = 'loading-indicator';
         loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading more movies...';
@@ -217,31 +217,21 @@ const fetchAndDisplayMovies = async (url, append = false) => {
         isLoading = false;
 
     } catch (error) {
-        // Error handling for network or unexpected errors
         console.error('Fetch error:', error);
-
-        // Remove loading indicator if it exists
         const loadingIndicator = document.querySelector('.loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.remove();
-        }
-
+        if (loadingIndicator) loadingIndicator.remove();
         if (!append) {
-            displayStatusMessage(`An error occurred while fetching data: ${error.message}. Please try again later.`, true);
+            displayStatusMessage(`Error: ${error.message}. Please try again later.`, true);
         }
-
         isLoading = false;
     }
 };
 
 const fetchAndDisplayFavoriteMovies = async (movieIds) => {
     if (isLoading || !movieIds || movieIds.length === 0) return;
-
     isLoading = true;
     displayStatusMessage('Loading favorite movies...');
-    hideStatusMessage(); // Hide loading message initially to prevent flicker
-
-    // Clear previous movies and show skeleton loading
+    hideStatusMessage();
     movieListContainer.innerHTML = '';
     displaySkeletonCards();
 
@@ -300,13 +290,9 @@ const updateFavoritesCount = () => {
     const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
     const count = favorites.length;
 
-    // Remove existing count badge if present
     const existingCount = favoritesToggle.querySelector('.favorites-count');
-    if (existingCount) {
-        existingCount.remove();
-    }
+    if (existingCount) existingCount.remove();
 
-    // Add count badge if there are favorites
     if (count > 0) {
         const countBadge = document.createElement('span');
         countBadge.className = 'favorites-count';
@@ -322,8 +308,7 @@ const handleSearch = (event) => {
 
     if (query) {
         isFetchingPopularMovies = false;
-        const searchUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(query)}&page=1`;
-        fetchAndDisplayMovies(searchUrl);
+        fetchAndDisplayMovies(`${SEARCH_MOVIES_URL}${encodeURIComponent(query)}&page=1`);
     } else {
         isFetchingPopularMovies = true;
         fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
@@ -377,9 +362,7 @@ movieListContainer.addEventListener('click', (event) => {
 
             // Show success animation
             button.style.transform = 'scale(1.3)';
-            setTimeout(() => {
-                button.style.transform = '';
-            }, 300);
+            setTimeout(() => button.style.transform = '', 300);
 
             // Store in favorites
             const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
@@ -388,7 +371,6 @@ movieListContainer.addEventListener('click', (event) => {
                 localStorage.setItem('favorites', JSON.stringify(favorites));
             }
 
-            // Update favorites count
             updateFavoritesCount();
 
             // If currently viewing favorites, refresh the list
@@ -486,9 +468,7 @@ const closeModal = (modalOverlay) => {
     modalOverlay.style.opacity = '0';
     modalContent.style.transform = 'scale(0.8)';
 
-    setTimeout(() => {
-        document.body.removeChild(modalOverlay);
-    }, 300);
+    setTimeout(() => document.body.removeChild(modalOverlay), 300);
 };
 
 const fetchMovieDetails = async (movieId, modalContent) => {
@@ -512,7 +492,7 @@ const fetchMovieDetails = async (movieId, modalContent) => {
             // Search for official trailer on YouTube
             const searchQuery = `${movie.title} ${releaseYear} official trailer`;
             console.log('Searching for trailer with query:', searchQuery);
-            const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&maxResults=1&type=video&key=AIzaSyC3hIy9_Kejs-azrf5bRYw_JZRgCLAVijE`);
+            const youtubeResponse = await fetch(`${YOUTUBE_SEARCH_URL}&q=${encodeURIComponent(searchQuery)}&maxResults=1&type=video&key=${YOUTUBE_API_KEY}`);
 
             if (youtubeResponse.ok) {
                 const youtubeData = await youtubeResponse.json();
