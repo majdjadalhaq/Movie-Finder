@@ -10,9 +10,122 @@ const POPULAR_MOVIES_URL = `${BASE_URL}/movie/popular?api_key=${API_KEY}`;
 const SEARCH_MOVIES_URL = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=`;
 const GENRES_URL = `${BASE_URL}/genre/movie/list?api_key=${API_KEY}`;
 const YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search?part=snippet';
+const MOVIE_CREDITS_URL = (movieId) => `${BASE_URL}/movie/${movieId}/credits?api_key=${API_KEY}`;
+const PERSON_MOVIES_URL = (personId) => `${BASE_URL}/person/${personId}/movie_credits?api_key=${API_KEY}`;
 
 // Genre Mapping
 let genreMap = {};
+
+// Fetch and display movie cast
+const fetchMovieCast = async (movieId) => {
+    try {
+        const response = await fetch(MOVIE_CREDITS_URL(movieId));
+        const data = await response.json();
+        return data.cast.slice(0, 10); // Return first 10 cast members
+    } catch (error) {
+        console.error('Error fetching cast:', error);
+        return [];
+    }
+};
+
+// Fetch and display actor movies
+const fetchActorMovies = async (actorId, actorName) => {
+    try {
+        const response = await fetch(PERSON_MOVIES_URL(actorId));
+        const data = await response.json();
+        
+        // Sort movies by popularity and get first 12
+        const movies = data.cast
+            .sort((a, b) => b.popularity - a.popularity)
+            .slice(0, 12);
+            
+        showActorMoviesModal(actorName, movies);
+    } catch (error) {
+        console.error('Error fetching actor movies:', error);
+    }
+};
+
+// Display actor movies in a modal
+const showActorMoviesModal = (actorName, movies) => {
+    // Create modal overlay
+    const modalOverlay = document.createElement('div');
+    modalOverlay.className = 'modal-overlay';
+    modalOverlay.style.opacity = '0';
+    modalOverlay.style.transition = 'opacity var(--transition-medium)';
+
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    modalContent.style.transform = 'scale(0.8)';
+    modalContent.style.transition = 'transform var(--transition-medium)';
+
+    // Create movies grid
+    const moviesGrid = document.createElement('div');
+    moviesGrid.className = 'actor-movies-grid';
+    
+    // Add movies to grid
+    movies.forEach(movie => {
+        const movieCard = document.createElement('div');
+        movieCard.className = 'actor-movie-card';
+        movieCard.setAttribute('data-movie-id', movie.id);
+        
+        const posterPath = movie.poster_path 
+            ? `${IMAGE_BASE_URL}${movie.poster_path}` 
+            : 'https://via.placeholder.com/300x450?text=No+Image';
+            
+        const releaseYear = movie.release_date 
+            ? movie.release_date.substring(0, 4) 
+            : 'N/A';
+            
+        movieCard.innerHTML = `
+            <img src="${posterPath}" alt="${movie.title} Poster" class="actor-movie-poster" loading="lazy">
+            <div class="actor-movie-info">
+                <h4 class="actor-movie-title">${movie.title}</h4>
+                <p class="actor-movie-year">${releaseYear}</p>
+            </div>
+        `;
+        
+        // Add click event to show movie details
+        movieCard.addEventListener('click', () => {
+            closeModal(modalOverlay);
+            showMovieDetailsModal(movie.id);
+        });
+        
+        moviesGrid.appendChild(movieCard);
+    });
+
+    // Add content to modal
+    modalContent.innerHTML = `
+        <div class="modal-header">
+            <h2>Movies starring ${actorName}</h2>
+            <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            ${moviesGrid.outerHTML}
+        </div>
+    `;
+
+    // Add modal to page
+    modalOverlay.appendChild(modalContent);
+    document.body.appendChild(modalOverlay);
+
+    // Animate in
+    setTimeout(() => {
+        modalOverlay.style.opacity = '1';
+        modalContent.style.transform = 'scale(1)';
+    }, 10);
+
+    // Set up close button
+    const closeButton = modalContent.querySelector('.modal-close');
+    closeButton.addEventListener('click', () => closeModal(modalOverlay));
+    
+    // Close on overlay click
+    modalOverlay.addEventListener('click', (event) => {
+        if (event.target === modalOverlay) {
+            closeModal(modalOverlay);
+        }
+    });
+};
 let selectedGenres = [];
 
 // DOM Elements (using camelCase)
@@ -547,6 +660,26 @@ const fetchMovieDetails = async (movieId, modalContent) => {
                </div>`
             : '';
 
+        // Fetch movie cast
+        const cast = await fetchMovieCast(movieId);
+        
+        // Create cast HTML
+        let castHtml = '';
+        if (cast.length > 0) {
+            const castListHtml = cast.map(actor => 
+                `<span class="cast-member" data-actor-id="${actor.id}" data-actor-name="${actor.name}" role="button" tabindex="0">${actor.name}</span>`
+            ).join('');
+            
+            castHtml = `
+                <div class="movie-cast">
+                    <h4 class="cast-title">Cast</h4>
+                    <div class="cast-list">
+                        ${castListHtml}
+                    </div>
+                </div>
+            `;
+        }
+        
         // Update modal content with movie details
         modalBody.innerHTML = `
             ${backdropHtml}
@@ -569,10 +702,31 @@ const fetchMovieDetails = async (movieId, modalContent) => {
                         <h4>Overview</h4>
                         <p>${movie.overview || 'No overview available.'}</p>
                     </div>
+                    ${castHtml}
                 </div>
             </div>
             ${trailerHtml}
         `;
+        
+        // Set up cast member click events
+        const castMembers = modalBody.querySelectorAll('.cast-member');
+        castMembers.forEach(member => {
+            member.addEventListener('click', () => {
+                const actorId = member.dataset.actorId;
+                const actorName = member.dataset.actorName;
+                fetchActorMovies(actorId, actorName);
+            });
+            
+            // Add keyboard support
+            member.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    const actorId = member.dataset.actorId;
+                    const actorName = member.dataset.actorName;
+                    fetchActorMovies(actorId, actorName);
+                }
+            });
+        });
 
     } catch (error) {
         console.error('Error fetching movie details:', error);
