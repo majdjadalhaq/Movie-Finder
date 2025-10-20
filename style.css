@@ -44,17 +44,9 @@ body {
  * Header and Navigation
  */
 .main-header {
-    background: rgba(0, 0, 0, 0.8);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
     backdrop-filter: blur(12px);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 24px;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     -webkit-backdrop-filter: blur(12px);
     border-radius: 0 0 20px;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -179,9 +171,7 @@ body {
 .search-form {
     display: flex;
     width: 100%;
-    max-width: 600px;
-    flex: 1;
-    margin: 0 20px;
+    max-width: 400px;
     box-shadow: none;
     border-radius: 4px;
     overflow: hidden;
@@ -1032,8 +1022,8 @@ input:focus-visible {
 /* Genre Filter Enhancement */
 .genre-filter-container {
     display: flex;
-    flex-wrap: wrap;
-    gap: calc(var(--spacing-unit) * 0.5);
+    flex-direction: column;
+    gap: calc(var(--spacing-unit) * 1);
     margin: calc(var(--spacing-unit) * 1.5) 0 calc(var(--spacing-unit) * 2);
     padding: calc(var(--spacing-unit) * 1.5);
     background: rgba(0, 0, 0, 0.7);
@@ -1059,41 +1049,38 @@ input:focus-visible {
 
 /* Toggle button for genre filter */
 .genre-filter-toggle {
+    position: sticky;
+    top: 80px;
+    z-index: 16;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    padding: calc(var(--spacing-unit) * 0.6) calc(var(--spacing-unit) * 1.2);
+    margin: 0 auto calc(var(--spacing-unit) * 1);
     color: var(--color-text);
     font-size: 0.9rem;
-    font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     width: fit-content;
-    margin-right: 10px;
 }
 
 .genre-filter-toggle:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(31, 38, 135, 0.2);
 }
 
 .genre-filter-toggle i {
-    margin-right: 8px;
-    transition: transform 0.2s ease;
+    margin-right: calc(var(--spacing-unit) * 0.5);
+    transition: transform 0.3s ease;
 }
 
 .genre-filter-toggle.collapsed i {
     transform: rotate(180deg);
-}
-
-.genre-filter-toggle:active {
-    transform: translateY(0);
 }
 
 .genre-filter-header {
@@ -1153,6 +1140,83 @@ input:focus-visible {
     display: flex;
     flex-wrap: wrap;
     gap: calc(var(--spacing-unit) * 0.5);
+    width: 100%;
+}
+
+/* Filter sections styling */
+.filter-section {
+    margin-top: calc(var(--spacing-unit) * 1);
+    width: 100%;
+}
+
+.filter-section-title {
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing-unit) * 0.5);
+    margin-bottom: calc(var(--spacing-unit) * 0.8);
+    color: var(--color-text);
+    font-weight: 500;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.filter-section-title i {
+    color: var(--color-primary);
+}
+
+.sort-filter-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--spacing-unit) * 0.5);
+    width: 100%;
+}
+
+.sort-filter-button {
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: var(--color-text);
+    padding: calc(var(--spacing-unit) * 0.4) calc(var(--spacing-unit) * 0.8);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+}
+
+.sort-filter-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background-color: var(--color-primary);
+    transition: width var(--transition-medium);
+    z-index: -1;
+}
+
+.sort-filter-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    background-color: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.sort-filter-button:hover::before {
+    width: 100%;
+}
+
+.sort-filter-button.active {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
+}
+
+.sort-filter-button.active::before {
     width: 100%;
 }
 
@@ -1220,6 +1284,15 @@ input:focus-visible {
         font-size: 0.8rem;
         padding: calc(var(--spacing-unit) * 0.3) calc(var(--spacing-unit) * 0.6);
     }
+    
+    .filter-section-title {
+        font-size: 1rem;
+    }
+    
+    .sort-filter-button {
+        font-size: 0.8rem;
+        padding: calc(var(--spacing-unit) * 0.3) calc(var(--spacing-unit) * 0.6);
+    }
 }
 
 /* Enhanced Loading State */
@@ -1260,26 +1333,6 @@ input:focus-visible {
 
 .search-input:focus::placeholder {
     opacity: 0.4;
-}
-
-.filters-wrapper {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-}
-
-.genre-filter-toggle {
-    margin-right: 10px;
-}
-
-@media (max-width: 768px) {
-    .filters-wrapper {
-        flex-direction: column;
-        gap: 10px;
-    }
-}
 }
 
 /* Back to Top Button */

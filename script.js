@@ -16,6 +16,9 @@ const PERSON_MOVIES_URL = (personId) => `${BASE_URL}/person/${personId}/movie_cr
 // Genre Mapping
 let genreMap = {};
 
+// Sorting options
+let selectedSortOption = null;
+
 // Fetch and display movie cast
 const fetchMovieCast = async (movieId) => {
     try {
@@ -148,22 +151,22 @@ const createBackToTopButton = () => {
 
 const backToTopButton = createBackToTopButton();
 
-// Create genre filter container
+// Create filter container (includes both genre and sort options)
 const createGenreFilterContainer = () => {
     const container = document.createElement('div');
     container.className = 'genre-filter-container';
     container.id = 'genreFilter';
-    container.setAttribute('aria-label', 'Filter movies by genre');
+    container.setAttribute('aria-label', 'Filter movies by genre and sort options');
     container.setAttribute('role', 'group');
     return container;
 };
 
-// Create genre filter toggle button
+// Create filter toggle button
 const createGenreFilterToggle = () => {
     const toggle = document.createElement('button');
     toggle.className = 'genre-filter-toggle';
-    toggle.innerHTML = '<i class="fas fa-chevron-down"></i> Genre Filter';
-    toggle.setAttribute('aria-label', 'Toggle genre filter visibility');
+    toggle.innerHTML = '<i class="fas fa-chevron-up"></i> Filter & Sort';
+    toggle.setAttribute('aria-label', 'Toggle filter visibility');
     toggle.setAttribute('aria-expanded', 'true');
 
     toggle.addEventListener('click', () => {
@@ -176,9 +179,9 @@ const createGenreFilterToggle = () => {
 
         // Update button text
         if (isExpanded) {
-            toggle.innerHTML = '<i class="fas fa-chevron-up"></i> Genre Filter';
+            toggle.innerHTML = '<i class="fas fa-chevron-up"></i> Filter & Sort';
         } else {
-            toggle.innerHTML = '<i class="fas fa-chevron-down"></i> Genre Filter';
+            toggle.innerHTML = '<i class="fas fa-chevron-down"></i> Show Filters';
         }
     });
 
@@ -188,126 +191,9 @@ const createGenreFilterToggle = () => {
 const genreFilterContainer = createGenreFilterContainer();
 const genreFilterToggle = createGenreFilterToggle();
 
-// Initialize genre filter in hidden state
-genreFilterContainer.classList.add('hidden');
-genreFilterToggle.classList.add('collapsed');
-genreFilterToggle.innerHTML = '<i class="fas fa-chevron-down"></i> Genre Filter';
-genreFilterToggle.setAttribute('aria-expanded', 'false');
-
-// Create filters wrapper container
-const filtersWrapper = document.createElement('div');
-filtersWrapper.className = 'filters-wrapper';
-movieListContainer.parentNode.insertBefore(filtersWrapper, movieListContainer);
-
-// Insert genre filter toggle and container into wrapper
-filtersWrapper.appendChild(genreFilterToggle);
-filtersWrapper.appendChild(genreFilterContainer);
-
-// Create sorting filter container
-const createSortingFilterContainer = () => {
-    const container = document.createElement('div');
-    container.className = 'genre-filter-container';
-    container.id = 'sortingFilter';
-    container.setAttribute('aria-label', 'Sort movies by');
-    container.setAttribute('role', 'group');
-    return container;
-};
-
-// Create sorting filter toggle button
-const createSortingFilterToggle = () => {
-    const toggle = document.createElement('button');
-    toggle.className = 'genre-filter-toggle';
-    toggle.innerHTML = '<i class="fas fa-chevron-down"></i> Sort Movies';
-    toggle.setAttribute('aria-label', 'Toggle sorting options visibility');
-    toggle.setAttribute('aria-expanded', 'false');
-
-    toggle.addEventListener('click', () => {
-        sortingFilterContainer.classList.toggle('hidden');
-        toggle.classList.toggle('collapsed');
-
-        // Update aria-expanded attribute
-        const isExpanded = !sortingFilterContainer.classList.contains('hidden');
-        toggle.setAttribute('aria-expanded', isExpanded);
-
-        // Update button text
-        if (isExpanded) {
-            toggle.innerHTML = '<i class="fas fa-chevron-up"></i> Sort Movies';
-        } else {
-            toggle.innerHTML = '<i class="fas fa-chevron-down"></i> Sort Movies';
-        }
-    });
-
-    return toggle;
-};
-
-const sortingFilterContainer = createSortingFilterContainer();
-const sortingFilterToggle = createSortingFilterToggle();
-
-// Initialize sorting filter in hidden state
-sortingFilterContainer.classList.add('hidden');
-sortingFilterToggle.classList.add('collapsed');
-
-// Create sorting options
-const createSortingOptions = () => {
-    const headerElement = document.createElement('div');
-    headerElement.className = 'genre-filter-header';
-    
-    const titleElement = document.createElement('h3');
-    titleElement.className = 'genre-filter-title';
-    titleElement.innerHTML = 'Sort by <i class="fas fa-sort"></i>';
-    
-    headerElement.appendChild(titleElement);
-    sortingFilterContainer.appendChild(headerElement);
-    
-    const listContainer = document.createElement('div');
-    listContainer.className = 'genre-filter-list';
-    
-    // Add sorting options
-    const sortingOptions = [
-        { id: 'popularity', label: 'Popularity', url: POPULAR_MOVIES_URL },
-        { id: 'rating', label: 'Rating', url: `${BASE_URL}/movie/top_rated?api_key=${API_KEY}` },
-        { id: 'trending', label: 'Trending', url: `${BASE_URL}/trending/movie/week?api_key=${API_KEY}` }
-    ];
-    
-    sortingOptions.forEach(option => {
-        const button = document.createElement('button');
-        button.className = 'genre-filter-button';
-        button.dataset.sortId = option.id;
-        button.dataset.sortUrl = option.url;
-        button.textContent = option.label;
-        
-        button.addEventListener('click', () => {
-            // Remove active class from all buttons
-            document.querySelectorAll('.genre-filter-button[data-sort-id]').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Add active class to clicked button
-            button.classList.add('active');
-            
-            // Update current sorting
-            currentSortUrl = option.url;
-            isFetchingPopularMovies = true;
-            
-            // Fetch movies with new sorting
-            fetchAndDisplayMovies(`${option.url}&page=1`);
-        });
-        
-        listContainer.appendChild(button);
-    });
-    
-    sortingFilterContainer.appendChild(listContainer);
-};
-
-// Initialize sorting options
-createSortingOptions();
-
-// Insert sorting filter into wrapper
-filtersWrapper.appendChild(sortingFilterToggle);
-filtersWrapper.appendChild(sortingFilterContainer);
-
-// Add current sort URL variable
-let currentSortUrl = POPULAR_MOVIES_URL;
+// Insert toggle and container before movie list
+movieListContainer.parentNode.insertBefore(genreFilterToggle, movieListContainer);
+movieListContainer.parentNode.insertBefore(genreFilterContainer, movieListContainer);
 
 // Add scroll listener to header
 window.addEventListener('scroll', () => {
@@ -893,7 +779,7 @@ const fetchGenres = async () => {
     }
 };
 
-// Create genre filter buttons
+// Create filter buttons (genre and sort)
 const createGenreFilterButtons = (genres) => {
     genreFilterContainer.innerHTML = '';
 
@@ -904,16 +790,20 @@ const createGenreFilterButtons = (genres) => {
     // Create title element
     const titleElement = document.createElement('div');
     titleElement.className = 'genre-filter-title';
-    titleElement.innerHTML = '<i class="fas fa-filter"></i> Filter by Genre';
+    titleElement.innerHTML = '<i class="fas fa-filter"></i> Filter & Sort';
 
     // Create clear filters button
     const clearFiltersButton = document.createElement('button');
     clearFiltersButton.className = 'clear-filters';
     clearFiltersButton.textContent = 'Clear All';
-    clearFiltersButton.setAttribute('aria-label', 'Clear all genre filters');
+    clearFiltersButton.setAttribute('aria-label', 'Clear all filters');
     clearFiltersButton.addEventListener('click', () => {
         selectedGenres = [];
+        selectedSortOption = null;
         document.querySelectorAll('.genre-filter-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelectorAll('.sort-filter-button').forEach(btn => {
             btn.classList.remove('active');
         });
         document.querySelector('[data-genre-id="all"]').classList.add('active');
@@ -953,12 +843,8 @@ const createGenreFilterButtons = (genres) => {
         // Update the count badge
         updateGenreCountBadge();
 
-        if (currentSearchQuery) {
-            const searchUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}&page=1`;
-            fetchAndDisplayMovies(searchUrl);
-        } else {
-            fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
-        }
+        // Apply filters and sort
+        applyFiltersAndSort();
     });
     listContainer.appendChild(allButton);
 
@@ -992,14 +878,71 @@ const createGenreFilterButtons = (genres) => {
             // Update the genre count badge
             updateGenreCountBadge();
 
-            // Filter movies based on selected genres
-            filterMoviesByGenres();
+            // Apply filters and sort
+            applyFiltersAndSort();
         });
 
         listContainer.appendChild(button);
     });
 
     genreFilterContainer.appendChild(listContainer);
+
+    // Create sorting options container
+    const sortContainer = document.createElement('div');
+    sortContainer.className = 'filter-section';
+    
+    // Create sorting title
+    const sortTitle = document.createElement('div');
+    sortTitle.className = 'filter-section-title';
+    sortTitle.innerHTML = '<i class="fas fa-sort"></i> Sort By';
+    sortContainer.appendChild(sortTitle);
+    
+    // Create sorting options list
+    const sortListContainer = document.createElement('div');
+    sortListContainer.className = 'sort-filter-list';
+    
+    // Define sorting options
+    const sortOptions = [
+        { id: 'popularity-desc', name: 'popularity', apiParam: 'popularity.desc' },
+        { id: 'release-date-desc', name: 'release', apiParam: 'release_date.desc' },
+        { id: 'rating-desc', name: 'rating', apiParam: 'vote_average.desc' },
+        { id: 'trending-week', name: 'Trending (This Week)', apiParam: 'trending.week' },
+        { id: 'trending-day', name: 'Trending (Today)', apiParam: 'trending.day' }
+    ];
+    
+    // Create sort option buttons
+    sortOptions.forEach(option => {
+        const button = document.createElement('button');
+        button.className = 'sort-filter-button';
+        button.textContent = option.name;
+        button.setAttribute('data-sort-id', option.id);
+        button.setAttribute('data-sort-param', option.apiParam);
+        button.setAttribute('aria-label', `Sort movies by ${option.name}`);
+        
+        button.addEventListener('click', () => {
+            // Toggle sort selection
+            document.querySelectorAll('.sort-filter-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (selectedSortOption === option.id) {
+                // If clicking the already selected option, deselect it
+                selectedSortOption = null;
+            } else {
+                // Select the new sort option
+                selectedSortOption = option.id;
+                button.classList.add('active');
+            }
+            
+            // Apply filters and sort
+            applyFiltersAndSort();
+        });
+        
+        sortListContainer.appendChild(button);
+    });
+    
+    sortContainer.appendChild(sortListContainer);
+    genreFilterContainer.appendChild(sortContainer);
 };
 
 // Update genre filter count badge
@@ -1018,34 +961,83 @@ const updateGenreCountBadge = () => {
     }
 };
 
-// Filter movies by selected genres
-const filterMoviesByGenres = () => {
+// Apply filters and sort options
+const applyFiltersAndSort = () => {
     // Update the count badge
     updateGenreCountBadge();
 
-    if (selectedGenres.length === 0) {
-        // If no genres selected, show all movies
-        if (currentSearchQuery) {
-            const searchUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}&page=1`;
-            fetchAndDisplayMovies(searchUrl);
-        } else {
-            fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
-        }
-        return;
-    }
-
-    displayStatusMessage('Filtering movies by genre...');
-    hideStatusMessage();
-
-    // Fetch movies with selected genres
-    const genreQuery = selectedGenres.join(',');
+    // Determine what URL to use based on selection
     let filterUrl;
-
-    if (currentSearchQuery) {
-        filterUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}&with_genres=${genreQuery}&page=1`;
+    
+    // Handle trending sort options (use dedicated endpoints)
+    if (selectedSortOption === 'trending-week') {
+        filterUrl = `${BASE_URL}/trending/movie/week?api_key=${API_KEY}&page=1`;
+        if (selectedGenres.length > 0) {
+            // Add genre filter to trending results
+            filterUrl += `&with_genres=${selectedGenres.join(',')}`;
+        }
+    } else if (selectedSortOption === 'trending-day') {
+        filterUrl = `${BASE_URL}/trending/movie/day?api_key=${API_KEY}&page=1`;
+        if (selectedGenres.length > 0) {
+            // Add genre filter to trending results
+            filterUrl += `&with_genres=${selectedGenres.join(',')}`;
+        }
     } else {
-        filterUrl = `${BASE_URL}/discover/movie?api_key=${API_KEY}&with_genres=${genreQuery}&page=1`;
+        // Handle all other cases
+        if (selectedGenres.length === 0 && !selectedSortOption) {
+            // If no filters selected, show default movies
+            if (currentSearchQuery) {
+                filterUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}&page=1`;
+            } else {
+                filterUrl = `${POPULAR_MOVIES_URL}&page=1`;
+            }
+        } else {
+            // Use discover endpoint for filtering and sorting
+            filterUrl = `${BASE_URL}/discover/movie?api_key=${API_KEY}`;
+            
+            // Add genre filter if selected
+            if (selectedGenres.length > 0) {
+                filterUrl += `&with_genres=${selectedGenres.join(',')}`;
+            }
+            
+            // Add sort parameter if selected
+            if (selectedSortOption) {
+                const sortButton = document.querySelector(`[data-sort-id="${selectedSortOption}"]`);
+                if (sortButton) {
+                    const sortParam = sortButton.getAttribute('data-sort-param');
+                    filterUrl += `&sort_by=${sortParam}`;
+                }
+            }
+            
+            // Add page parameter
+            filterUrl += '&page=1';
+        }
     }
+
+    // Special handling for search with sort options
+    if (currentSearchQuery && selectedSortOption && !selectedSortOption.includes('trending')) {
+        // Search with sort parameters
+        filterUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}`;
+        
+        // Add genre filter if selected
+        if (selectedGenres.length > 0) {
+            filterUrl += `&with_genres=${selectedGenres.join(',')}`;
+        }
+        
+        // Add sort parameter if selected
+        if (selectedSortOption) {
+            const sortButton = document.querySelector(`[data-sort-id="${selectedSortOption}"]`);
+            if (sortButton) {
+                const sortParam = sortButton.getAttribute('data-sort-param');
+                filterUrl += `&sort_by=${sortParam}`;
+            }
+        }
+        
+        filterUrl += '&page=1';
+    }
+
+    displayStatusMessage('Applying filters...');
+    hideStatusMessage();
 
     fetchAndDisplayMovies(filterUrl);
 };
