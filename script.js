@@ -34,7 +34,7 @@ const fetchMovieCast = async (movieId) => {
 // Fetch and display actor movies
 const fetchActorMovies = async (actorId, actorName) => {
     try {
-        const response = await fetch(PERSON_MOVIES_URL(actorId));
+        const response = await fetch(API_ENDPOINTS.personMovies(actorId));
         const data = await response.json();
         
         // Sort movies by popularity and get first 12
