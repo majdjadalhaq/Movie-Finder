@@ -1,137 +1,9 @@
-// TMDB API Configuration
-const API_KEY = '5b40b0f5b10231d23aac66a5994c4c05';
-const BASE_URL = 'https://api.themoviedb.org/3';
-const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
-const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original';
-const YOUTUBE_API_KEY = 'AIzaSyC3hIy9_Kejs-azrf5bRYw_JZRgCLAVijE';
+/**
+ * Movie Finder UI Module
+ * Handles all user interface interactions, DOM manipulation, and visual feedback
+ */
 
-// API Endpoints
-const POPULAR_MOVIES_URL = `${BASE_URL}/movie/popular?api_key=${API_KEY}`;
-const SEARCH_MOVIES_URL = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=`;
-const GENRES_URL = `${BASE_URL}/genre/movie/list?api_key=${API_KEY}`;
-const YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search?part=snippet';
-const MOVIE_CREDITS_URL = (movieId) => `${BASE_URL}/movie/${movieId}/credits?api_key=${API_KEY}`;
-const PERSON_MOVIES_URL = (personId) => `${BASE_URL}/person/${personId}/movie_credits?api_key=${API_KEY}`;
-
-// Genre Mapping
-let genreMap = {};
-
-// Sorting options
-let selectedSortOption = null;
-
-// Fetch and display movie cast
-const fetchMovieCast = async (movieId) => {
-    try {
-        const response = await fetch(MOVIE_CREDITS_URL(movieId));
-        const data = await response.json();
-        return data.cast.slice(0, 10); // Return first 10 cast members
-    } catch (error) {
-        console.error('Error fetching cast:', error);
-        return [];
-    }
-};
-
-// Fetch and display actor movies
-const fetchActorMovies = async (actorId, actorName) => {
-    try {
-        const response = await fetch(PERSON_MOVIES_URL(actorId));
-        const data = await response.json();
-        
-        // Sort movies by popularity and get first 12
-        const movies = data.cast
-            .sort((a, b) => b.popularity - a.popularity)
-            .slice(0, 12);
-            
-        showActorMoviesModal(actorName, movies);
-    } catch (error) {
-        console.error('Error fetching actor movies:', error);
-    }
-};
-
-// Display actor movies in a modal
-const showActorMoviesModal = (actorName, movies) => {
-    // Create modal overlay
-    const modalOverlay = document.createElement('div');
-    modalOverlay.className = 'modal-overlay';
-    modalOverlay.style.opacity = '0';
-    modalOverlay.style.transition = 'opacity var(--transition-medium)';
-
-    // Create modal content
-    const modalContent = document.createElement('div');
-    modalContent.className = 'modal-content';
-    modalContent.style.transform = 'scale(0.8)';
-    modalContent.style.transition = 'transform var(--transition-medium)';
-
-    // Create movies grid
-    const moviesGrid = document.createElement('div');
-    moviesGrid.className = 'actor-movies-grid';
-    
-    // Add movies to grid
-    movies.forEach(movie => {
-        const movieCard = document.createElement('div');
-        movieCard.className = 'actor-movie-card';
-        movieCard.setAttribute('data-movie-id', movie.id);
-        
-        const posterPath = movie.poster_path 
-            ? `${IMAGE_BASE_URL}${movie.poster_path}` 
-            : 'https://via.placeholder.com/300x450?text=No+Image';
-            
-        const releaseYear = movie.release_date 
-            ? movie.release_date.substring(0, 4) 
-            : 'N/A';
-            
-        movieCard.innerHTML = `
-            <img src="${posterPath}" alt="${movie.title} Poster" class="actor-movie-poster" loading="lazy">
-            <div class="actor-movie-info">
-                <h4 class="actor-movie-title">${movie.title}</h4>
-                <p class="actor-movie-year">${releaseYear}</p>
-            </div>
-        `;
-        
-        // Add click event to show movie details
-        movieCard.addEventListener('click', () => {
-            closeModal(modalOverlay);
-            showMovieDetailsModal(movie.id);
-        });
-        
-        moviesGrid.appendChild(movieCard);
-    });
-
-    // Add content to modal
-    modalContent.innerHTML = `
-        <div class="modal-header">
-            <h2>Movies starring ${actorName}</h2>
-            <button class="modal-close" aria-label="Close modal">&times;</button>
-        </div>
-        <div class="modal-body">
-            ${moviesGrid.outerHTML}
-        </div>
-    `;
-
-    // Add modal to page
-    modalOverlay.appendChild(modalContent);
-    document.body.appendChild(modalOverlay);
-
-    // Animate in
-    setTimeout(() => {
-        modalOverlay.style.opacity = '1';
-        modalContent.style.transform = 'scale(1)';
-    }, 10);
-
-    // Set up close button
-    const closeButton = modalContent.querySelector('.modal-close');
-    closeButton.addEventListener('click', () => closeModal(modalOverlay));
-    
-    // Close on overlay click
-    modalOverlay.addEventListener('click', (event) => {
-        if (event.target === modalOverlay) {
-            closeModal(modalOverlay);
-        }
-    });
-};
-let selectedGenres = [];
-
-// DOM Elements (using camelCase)
+// DOM Elements (using camelCase for consistency)
 const searchForm = document.getElementById('searchForm');
 const searchInput = document.getElementById('searchInput');
 const movieListContainer = document.getElementById('movieList');
@@ -216,7 +88,10 @@ let isFetchingPopularMovies = true;
 let isShowingFavorites = false;
 let favoriteMovies = [];
 
-const displayStatusMessage = (message, isError = false) => {
+// Selected genres for filtering (renamed for clarity)
+let selectedGenreIds = [];
+
+let displayStatusMessage = (message, isError = false) => {
     movieListContainer.innerHTML = '';
     statusMessageElement.textContent = message;
     statusMessageElement.className = isError ? 'status-message error' : 'status-message';
@@ -225,7 +100,7 @@ const displayStatusMessage = (message, isError = false) => {
 
 const displaySkeletonCards = (count = 8) => {
     movieListContainer.innerHTML = '';
-    const skeletonHTML = Array(count).fill('').map(() => 
+    const skeletonHTML = Array(count).fill('').map(() =>
         `<div class="movie-card skeleton-card"><div class="skeleton"></div></div>`
     ).join('');
     movieListContainer.innerHTML = skeletonHTML;
@@ -247,9 +122,9 @@ const createMovieCard = (movie) => {
     const releaseDate = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
     const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
 
-    // Get genre names from genre IDs
-    const genres = movie.genre_ids 
-        ? movie.genre_ids.slice(0, 3).map(id => genreMap[id]).filter(Boolean).join(', ')
+    // Get genre names from genre IDs using the renamed map
+    const genres = movie.genre_ids
+        ? movie.genre_ids.slice(0, 3).map(id => genreIdToNameMap[id]).filter(Boolean).join(', ')
         : (movie.genres ? movie.genres.slice(0, 3).map(g => g.name).join(', ') : '');
 
     return `
@@ -523,19 +398,12 @@ updateCharacterCounter();
 // Event Listeners
 searchForm.addEventListener('submit', handleSearch);
 
-// Favorites toggle event listener
+// Favorites button opens Favorites modal instead of switching views
 favoritesToggle.addEventListener('click', () => {
-    isShowingFavorites = !isShowingFavorites;
-    favoritesToggle.classList.toggle('active');
-
-    if (isShowingFavorites) {
-        // Show favorites
-        const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-        fetchAndDisplayFavoriteMovies(favorites);
-    } else {
-        // Show popular movies
-        isFetchingPopularMovies = true;
-        fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
+    // Do not toggle active state to avoid implying sticky state
+    // Open favorites modal (defined in modal.js)
+    if (typeof showFavoritesModal === 'function') {
+        showFavoritesModal();
     }
 });
 
@@ -643,254 +511,9 @@ movieListContainer.addEventListener('click', (event) => {
         const movieCard = button.closest('.movie-card');
         const movieId = movieCard.dataset.movieId;
 
-        // For demo purposes, we'll just show an alert
-        // In a real app, this would open a modal or navigate to a details page
         showMovieDetailsModal(movieId);
     }
 });
-
-const showMovieDetailsModal = (movieId) => {
-    // Create modal overlay
-    const modalOverlay = document.createElement('div');
-    modalOverlay.className = 'modal-overlay';
-    modalOverlay.style.opacity = '0';
-    modalOverlay.style.transition = 'opacity var(--transition-medium)';
-
-    // Create modal content
-    const modalContent = document.createElement('div');
-    modalContent.className = 'modal-content movie-details-modal';
-    modalContent.style.transform = 'scale(0.8)';
-    modalContent.style.transition = 'transform var(--transition-medium)';
-
-    // Add content to modal
-    modalContent.innerHTML = `
-        <div class="modal-header">
-            <h2>Movie Details</h2>
-            <button class="modal-close" aria-label="Close modal">&times;</button>
-        </div>
-        <div class="modal-body">
-            <p>Loading details for movie ID: ${movieId}...</p>
-        </div>
-    `;
-
-    // Add modal to page
-    modalOverlay.appendChild(modalContent);
-    document.body.appendChild(modalOverlay);
-
-    // Animate in
-    setTimeout(() => {
-        modalOverlay.style.opacity = '1';
-        modalContent.style.transform = 'scale(1)';
-    }, 10);
-
-    // Handle close button
-    const closeButton = modalContent.querySelector('.modal-close');
-    closeButton.addEventListener('click', () => {
-        closeModal(modalOverlay);
-    });
-
-    // Close on overlay click
-    modalOverlay.addEventListener('click', (event) => {
-        if (event.target === modalOverlay) {
-            closeModal(modalOverlay);
-        }
-    });
-
-    // Fetch movie details
-    fetchMovieDetails(movieId, modalContent);
-};
-
-const closeModal = (modalOverlay) => {
-    const modalContent = modalOverlay.querySelector('.modal-content');
-    modalOverlay.style.opacity = '0';
-    modalContent.style.transform = 'scale(0.8)';
-
-    setTimeout(() => document.body.removeChild(modalOverlay), 300);
-};
-
-const fetchMovieDetails = async (movieId, modalContent) => {
-    const modalBody = modalContent.querySelector('.modal-body');
-
-    try {
-        const response = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`);
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const movie = await response.json();
-
-        // Extract release year for YouTube search
-        const releaseYear = movie.release_date ? movie.release_date.substring(0, 4) : '';
-
-        // Fetch YouTube trailer
-        let trailerHtml = '';
-        try {
-            // Search for official trailer on YouTube
-            const searchQuery = `${movie.title} ${releaseYear} official trailer`;
-            console.log('Searching for trailer with query:', searchQuery);
-            const youtubeResponse = await fetch(`${YOUTUBE_SEARCH_URL}&q=${encodeURIComponent(searchQuery)}&maxResults=1&type=video&key=${YOUTUBE_API_KEY}`);
-
-            if (youtubeResponse.ok) {
-                const youtubeData = await youtubeResponse.json();
-                console.log('YouTube API response:', youtubeData);
-
-                if (youtubeData.items && youtubeData.items.length > 0) {
-                    const videoId = youtubeData.items[0].id.videoId;
-                    console.log('Found video ID:', videoId);
-                    trailerHtml = `
-                        <div class="movie-trailer">
-                            <h3>Official Trailer</h3>
-                            <div class="video-container">
-                                <iframe 
-                                    src="https://www.youtube.com/embed/${videoId}" 
-                                    title="${movie.title} Official Trailer" 
-                                    frameborder="0" 
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                    allowfullscreen>
-                                </iframe>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    console.log('No trailer found for:', searchQuery);
-                    trailerHtml = `
-                        <div class="movie-trailer">
-                            <h3>Official Trailer</h3>
-                            <p>Trailer unavailable</p>
-                        </div>
-                    `;
-                }
-            } else {
-                console.log('YouTube API error status:', youtubeResponse.status);
-                const errorText = await youtubeResponse.text();
-                console.log('YouTube API error response:', errorText);
-                throw new Error(`YouTube API error: ${youtubeResponse.status}`);
-            }
-        } catch (error) {
-            console.error('Error fetching YouTube trailer:', error);
-            trailerHtml = `
-                <div class="movie-trailer">
-                    <h3>Official Trailer</h3>
-                    <p>Trailer unavailable</p>
-                </div>
-            `;
-        }
-
-        // Create backdrop image HTML
-        const backdropHtml = movie.backdrop_path 
-            ? `<div class="movie-details-backdrop">
-                 <img src="${BACKDROP_BASE_URL}${movie.backdrop_path}" alt="${movie.title} Backdrop">
-               </div>`
-            : '';
-
-        // Fetch movie cast
-        const cast = await fetchMovieCast(movieId);
-        
-        // Create cast HTML
-        let castHtml = '';
-        if (cast.length > 0) {
-            const castListHtml = cast.map(actor => 
-                `<span class="cast-member" data-actor-id="${actor.id}" data-actor-name="${actor.name}" role="button" tabindex="0">${actor.name}</span>`
-            ).join('');
-            
-            castHtml = `
-                <div class="movie-cast">
-                    <div class="cast-list">
-                        ${castListHtml}
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Update modal content with movie details
-        modalBody.innerHTML = `
-            ${backdropHtml}
-            <div class="movie-details-container">
-                <div class="movie-details-poster">
-                    <img src="${movie.poster_path ? `${IMAGE_BASE_URL}${movie.poster_path}` : 'https://via.placeholder.com/300x450?text=No+Image'}" alt="${movie.title} Poster">
-                </div>
-                <div class="movie-details-info">
-                    <h3>${movie.title}</h3>
-                    <p class="movie-details-tagline">${movie.tagline || ''}</p>
-                    <div class="movie-details-meta">
-                        <span><i class="fas fa-calendar"></i> ${movie.release_date || 'N/A'}</span>
-                        <span><i class="fas fa-clock"></i> ${movie.runtime ? `${movie.runtime} min` : 'N/A'}</span>
-                        <span><i class="fas fa-star"></i> ${movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}</span>
-                    </div>
-                    <div class="movie-details-genres">
-                        ${movie.genres ? movie.genres.map(genre => `<span class="genre-tag">${genre.name}</span>`).join('') : ''}
-                    </div>
-
-                    <div class="modal-tabs">
-                        <button class="modal-tab active" data-tab="overview">Overview</button>
-                        <button class="modal-tab" data-tab="cast">Cast</button>
-                        <button class="modal-tab" data-tab="trailer">Trailer</button>
-                    </div>
-
-                    <div class="movie-details-content">
-                        <div class="modal-tab-content active" id="overview">
-                            <div class="movie-details-overview">
-                                <h4>Overview</h4>
-                                <p>${movie.overview || 'No overview available.'}</p>
-                            </div>
-                        </div>
-
-                        <div class="modal-tab-content" id="cast">
-                            ${castHtml}
-                        </div>
-
-                        <div class="modal-tab-content" id="trailer">
-                            ${trailerHtml}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Set up cast member click events
-        const castMembers = modalBody.querySelectorAll('.cast-member');
-        castMembers.forEach(member => {
-            member.addEventListener('click', () => {
-                const actorId = member.dataset.actorId;
-                const actorName = member.dataset.actorName;
-                fetchActorMovies(actorId, actorName);
-            });
-            
-            // Add keyboard support
-            member.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    const actorId = member.dataset.actorId;
-                    const actorName = member.dataset.actorName;
-                    fetchActorMovies(actorId, actorName);
-                }
-            });
-        });
-
-        // Set up tab switching functionality
-        const modalTabs = modalBody.querySelectorAll('.modal-tab');
-        const tabContents = modalBody.querySelectorAll('.modal-tab-content');
-
-        modalTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabId = tab.dataset.tab;
-
-                // Remove active class from all tabs and contents
-                modalTabs.forEach(t => t.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-
-                // Add active class to clicked tab and corresponding content
-                tab.classList.add('active');
-                document.getElementById(tabId).classList.add('active');
-            });
-        });
-
-    } catch (error) {
-        console.error('Error fetching movie details:', error);
-        modalBody.innerHTML = `<p class="error-message">Error loading movie details: ${error.message}</p>`;
-    }
-};
 
 // Infinity scroll implementation
 window.addEventListener('scroll', () => {
@@ -913,27 +536,6 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// Fetch genres from TMDB API
-const fetchGenres = async () => {
-    try {
-        const response = await fetch(GENRES_URL);
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-
-        // Create genre map for easy lookup
-        data.genres.forEach(genre => {
-            genreMap[genre.id] = genre.name;
-        });
-
-        // Create genre filter buttons
-        createGenreFilterButtons(data.genres);
-    } catch (error) {
-        console.error('Error fetching genres:', error);
-    }
-};
-
 // Create filter buttons (genre and sort)
 const createGenreFilterButtons = (genres) => {
     genreFilterContainer.innerHTML = '';
@@ -953,8 +555,8 @@ const createGenreFilterButtons = (genres) => {
     clearFiltersButton.textContent = 'Clear All';
     clearFiltersButton.setAttribute('aria-label', 'Clear all filters');
     clearFiltersButton.addEventListener('click', () => {
-        selectedGenres = [];
-        selectedSortOption = null;
+        selectedGenreIds = [];
+        currentSortOption = null;
         document.querySelectorAll('.genre-filter-button').forEach(btn => {
             btn.classList.remove('active');
         });
@@ -988,19 +590,19 @@ const createGenreFilterButtons = (genres) => {
     allButton.textContent = 'All';
     allButton.setAttribute('data-genre-id', 'all');
     allButton.setAttribute('aria-label', 'Show all movies');
-    allButton.addEventListener('click', () => {
-        selectedGenres = [];
-        document.querySelectorAll('.genre-filter-button').forEach(btn => {
-            btn.classList.remove('active');
+        allButton.addEventListener('click', () => {
+            selectedGenreIds = [];
+            document.querySelectorAll('.genre-filter-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            allButton.classList.add('active');
+
+            // Update the count badge
+            updateGenreCountBadge();
+
+            // Apply filters and sort
+            applyFiltersAndSort();
         });
-        allButton.classList.add('active');
-
-        // Update the count badge
-        updateGenreCountBadge();
-
-        // Apply filters and sort
-        applyFiltersAndSort();
-    });
     listContainer.appendChild(allButton);
 
     // Add genre buttons
@@ -1014,18 +616,18 @@ const createGenreFilterButtons = (genres) => {
         button.addEventListener('click', () => {
             // Toggle genre selection
             const genreId = genre.id.toString();
-            const index = selectedGenres.indexOf(genreId);
+            const index = selectedGenreIds.indexOf(genreId);
 
             if (index > -1) {
-                selectedGenres.splice(index, 1);
+                selectedGenreIds.splice(index, 1);
                 button.classList.remove('active');
 
                 // If no genres selected, select "All"
-                if (selectedGenres.length === 0) {
+                if (selectedGenreIds.length === 0) {
                     allButton.classList.add('active');
                 }
             } else {
-                selectedGenres.push(genreId);
+                selectedGenreIds.push(genreId);
                 button.classList.add('active');
                 allButton.classList.remove('active');
             }
@@ -1045,17 +647,18 @@ const createGenreFilterButtons = (genres) => {
     // Create sorting options container
     const sortContainer = document.createElement('div');
     sortContainer.className = 'filter-section';
-    
+
     // Create sorting title
     const sortTitle = document.createElement('div');
     sortTitle.className = 'filter-section-title';
     sortTitle.innerHTML = '<i class="fas fa-sort"></i> Sort By';
+
     sortContainer.appendChild(sortTitle);
-    
+
     // Create sorting options list
     const sortListContainer = document.createElement('div');
     sortListContainer.className = 'sort-filter-list';
-    
+
     // Define sorting options
     const sortOptions = [
         { id: 'popularity-desc', name: 'popularity', apiParam: 'popularity.desc' },
@@ -1064,7 +667,7 @@ const createGenreFilterButtons = (genres) => {
         { id: 'trending-week', name: 'Trending (This Week)', apiParam: 'trending.week' },
         { id: 'trending-day', name: 'Trending (Today)', apiParam: 'trending.day' }
     ];
-    
+
     // Create sort option buttons
     sortOptions.forEach(option => {
         const button = document.createElement('button');
@@ -1073,73 +676,80 @@ const createGenreFilterButtons = (genres) => {
         button.setAttribute('data-sort-id', option.id);
         button.setAttribute('data-sort-param', option.apiParam);
         button.setAttribute('aria-label', `Sort movies by ${option.name}`);
-        
+
         button.addEventListener('click', () => {
             // Toggle sort selection
             document.querySelectorAll('.sort-filter-button').forEach(btn => {
                 btn.classList.remove('active');
             });
-            
-            if (selectedSortOption === option.id) {
+
+            if (currentSortOption === option.id) {
                 // If clicking the already selected option, deselect it
-                selectedSortOption = null;
+                currentSortOption = null;
             } else {
                 // Select the new sort option
-                selectedSortOption = option.id;
+                currentSortOption = option.id;
                 button.classList.add('active');
             }
-            
+
             // Apply filters and sort
             applyFiltersAndSort();
         });
-        
+
         sortListContainer.appendChild(button);
     });
-    
+
     sortContainer.appendChild(sortListContainer);
     genreFilterContainer.appendChild(sortContainer);
 };
 
-// Update genre filter count badge
+/**
+ * Updates the genre filter count badge to show how many genres are selected
+ * Provides visual feedback for active filters
+ */
 const updateGenreCountBadge = () => {
     const countElement = document.querySelector('.genre-filter-count');
     if (countElement) {
         countElement.remove();
     }
 
-    if (selectedGenres.length > 0) {
+    if (selectedGenreIds.length > 0) {
         const countBadge = document.createElement('span');
         countBadge.className = 'genre-filter-count';
-        countBadge.textContent = selectedGenres.length;
-        countBadge.setAttribute('aria-label', `${selectedGenres.length} genres selected`);
+        countBadge.textContent = selectedGenreIds.length;
+        countBadge.setAttribute('aria-label', `${selectedGenreIds.length} genres selected`);
         document.querySelector('.genre-filter-title').appendChild(countBadge);
     }
 };
 
 // Apply filters and sort options
+/**
+ * Applies the current genre and sort filters to update the movie display
+ * Handles different combinations of search, genre filters, and sort options
+ */
 const applyFiltersAndSort = () => {
     // Update the count badge
     updateGenreCountBadge();
 
     // Determine what URL to use based on selection
     let filterUrl;
-    
+
     // Handle trending sort options (use dedicated endpoints)
-    if (selectedSortOption === 'trending-week') {
+    if (currentSortOption === 'trending-week') {
         filterUrl = `${BASE_URL}/trending/movie/week?api_key=${API_KEY}&page=1`;
-        if (selectedGenres.length > 0) {
+        if (selectedGenreIds.length > 0) {
             // Add genre filter to trending results
-            filterUrl += `&with_genres=${selectedGenres.join(',')}`;
+            filterUrl += `&with_genres=${selectedGenreIds.join(',')}`;
         }
-    } else if (selectedSortOption === 'trending-day') {
+    } else if (currentSortOption === 'trending-day') {
         filterUrl = `${BASE_URL}/trending/movie/day?api_key=${API_KEY}&page=1`;
-        if (selectedGenres.length > 0) {
+        if (selectedGenreIds.length > 0) {
             // Add genre filter to trending results
-            filterUrl += `&with_genres=${selectedGenres.join(',')}`;
+            filterUrl += `&with_genres=${selectedGenreIds.join(',')}`;
         }
     } else {
         // Handle all other cases
-        if (selectedGenres.length === 0 && !selectedSortOption) {
+        if (selectedGenreIds.length === 0 && !currentSortOption) {
             // If no filters selected, show default movies
             if (currentSearchQuery) {
                 filterUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}&page=1`;
@@ -1149,45 +759,45 @@ const applyFiltersAndSort = () => {
         } else {
             // Use discover endpoint for filtering and sorting
             filterUrl = `${BASE_URL}/discover/movie?api_key=${API_KEY}`;
-            
+
             // Add genre filter if selected
-            if (selectedGenres.length > 0) {
-                filterUrl += `&with_genres=${selectedGenres.join(',')}`;
+            if (selectedGenreIds.length > 0) {
+                filterUrl += `&with_genres=${selectedGenreIds.join(',')}`;
             }
-            
+
             // Add sort parameter if selected
-            if (selectedSortOption) {
-                const sortButton = document.querySelector(`[data-sort-id="${selectedSortOption}"]`);
+            if (currentSortOption) {
+                const sortButton = document.querySelector(`[data-sort-id="${currentSortOption}"]`);
                 if (sortButton) {
                     const sortParam = sortButton.getAttribute('data-sort-param');
                     filterUrl += `&sort_by=${sortParam}`;
                 }
             }
-            
+
             // Add page parameter
             filterUrl += '&page=1';
         }
     }
 
     // Special handling for search with sort options
-    if (currentSearchQuery && selectedSortOption && !selectedSortOption.includes('trending')) {
+    if (currentSearchQuery && currentSortOption && !currentSortOption.includes('trending')) {
         // Search with sort parameters
         filterUrl = `${SEARCH_MOVIES_URL}${encodeURIComponent(currentSearchQuery)}`;
-        
+
         // Add genre filter if selected
-        if (selectedGenres.length > 0) {
-            filterUrl += `&with_genres=${selectedGenres.join(',')}`;
+        if (selectedGenreIds.length > 0) {
+            filterUrl += `&with_genres=${selectedGenreIds.join(',')}`;
         }
-        
+
         // Add sort parameter if selected
-        if (selectedSortOption) {
-            const sortButton = document.querySelector(`[data-sort-id="${selectedSortOption}"]`);
+        if (currentSortOption) {
+            const sortButton = document.querySelector(`[data-sort-id="${currentSortOption}"]`);
             if (sortButton) {
                 const sortParam = sortButton.getAttribute('data-sort-param');
                 filterUrl += `&sort_by=${sortParam}`;
             }
         }
-        
+
         filterUrl += '&page=1';
     }
 
@@ -1214,62 +824,25 @@ backToTopButton.addEventListener('click', () => {
     });
 });
 
-// Initial load: Fetch and display popular movies
-document.addEventListener('DOMContentLoaded', () => {
-    isFetchingPopularMovies = true;
-    fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
-
-    // Fetch genres
-    fetchGenres();
-
-    // Update favorites count badge
-    updateFavoritesCount();
-
-    // Check for favorited movies and update their state
-    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    setTimeout(() => {
-        document.querySelectorAll('.movie-card').forEach(card => {
-            const movieId = card.dataset.movieId;
-            if (favorites.includes(movieId)) {
-                const favoriteBtn = card.querySelector('.add-to-favorites');
-                if (favoriteBtn) {
-                    favoriteBtn.classList.add('favorited');
-                    const icon = favoriteBtn.querySelector('i');
-                    icon.classList.remove('far');
-                    icon.classList.add('fas');
-                }
-            }
-        });
-    }, 1000);
-    
-    // Keyboard navigation handler
-    document.addEventListener('keydown', (event) => {
-        // Handle Escape key
-        if (event.key === 'Escape' || event.keyCode === 27) {
-            // Get all modals in order of appearance
-            const modals = document.querySelectorAll('.modal-overlay');
-            if (modals.length > 0) {
-                // Close the most recently opened modal (last in DOM)
-                closeModal(modals[modals.length - 1]);
-            } else if (isShowingFavorites) {
-                // Return from favorites to main view
-                favoritesToggle.click();
-            } else if (currentSearchQuery) {
-                // Return from search results to popular movies
-                clearSearch();
-            }
-            return;
+// Esc key: Let modal.js handle modal closing via stack.
+// When no modals are open, Esc clears current search to return to popular movies.
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        const hasOpenModals = (window.modalStack && window.modalStack.length > 0);
+        if (!hasOpenModals && currentSearchQuery) {
+            clearSearch();
         }
-        
-        // Handle Enter key
-        if (event.key === 'Enter' || event.keyCode === 13) {
-            // Check if search input is focused
-            if (document.activeElement === searchInput) {
-                // Trigger search
-                event.preventDefault();
-                handleSearch(event);
-            }
-            // Don't prevent default for other elements to allow normal form submission
+    }
+});
+
+// Submit search on Enter key
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        // Check if search input is focused
+        if (document.activeElement === searchInput) {
+            // Trigger search
+            event.preventDefault();
+            handleSearch(event);
         }
-    });
+    }
 });
