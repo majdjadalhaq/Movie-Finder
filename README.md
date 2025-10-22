@@ -8,7 +8,6 @@
   ![GitHub top language](https://img.shields.io/github/languages/top/majdjadalhaq/Movie-Finder)
   ![GitHub last commit](https://img.shields.io/github/last-commit/majdjadalhaq/Movie-Finder)
 
-  <img src="assets/preview.png" alt="Movie Finder Preview" width="800">
 </div>
 
 ## 📋 Table of Contents
@@ -230,17 +229,11 @@ Contributions are welcome! If you'd like to contribute to Movie Finder, please f
 -   Internationalization (i18n) support for multiple languages.
 -   Progressive Web App (PWA) implementation for offline capabilities.
 
-## 📄 License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-
 ## 🙏 Acknowledgments
 
 -   **The Movie Database (TMDB)**: For providing an invaluable and comprehensive movie data API.
 -   **YouTube**: For enabling seamless integration of video trailers.
 -   **Font Awesome**: For the elegant and functional icon library.
--   **The Open Source Community**: For continuous inspiration, tools, and knowledge sharing.
-
 ---
 
 <div align="center">
