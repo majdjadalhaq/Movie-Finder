@@ -1,110 +1,59 @@
 /**
- * Movie Finder Application Main Logic
- * Handles app initialization, keyboard shortcuts, and accessibility features
+ * js/app.js
+ * App bootstrap + global error hooks + a11y live region
  */
 
-
-
-/**
- * Initializes the application when DOM is ready
- */
+// Kick off the application once static assets and markup are parsed.
 document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
+  initializeApp();
 });
 
-/**
- * Main application initialization function
- * Sets up all core functionality and event listeners
- */
+// Primary bootstrap routine that loads initial data + UI scaffolding.
 const initializeApp = () => {
-    // Load initial movies (popular movies)
-    fetchAndDisplayMovies(`${POPULAR_MOVIES_URL}&page=1`);
-
-    // Fetch genres on app start
-    fetchGenres();
-
-    // Initialize favorites system
-    initializeFavorites();
-
-
-
-    // Add accessibility features
-    addAccessibilityFeatures();
+  fetchAndDisplayMovies(`${ENDPOINTS.POPULAR}&page=1`);
+  fetchGenres();
+  initializeFavorites();
+  addAccessibilityFeatures();
 };
 
-
-
-
-
-/**
- * Adds accessibility features to improve user experience for screen readers and keyboard navigation
- * Includes ARIA labels, skip links, and live regions for status updates
- */
+// Progressive enhancement: wire skip link focus management and create a polite live region.
 const addAccessibilityFeatures = () => {
-    // Add ARIA labels and roles where needed
-    const searchForm = document.getElementById('searchForm');
-    searchForm.setAttribute('role', 'search');
+  const skipLink = document.querySelector('.skip-to-main');
+  if (skipLink) {
+    skipLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      const mainContent = document.getElementById('movieList');
+      if (mainContent) {
+        mainContent.focus();
+        mainContent.scrollIntoView();
+      }
+    });
+  }
 
-    // Add skip link functionality for keyboard navigation
-    const skipLink = document.querySelector('.skip-to-main');
-    if (skipLink) {
-        skipLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            const mainContent = document.getElementById('movieList');
-            if (mainContent) {
-                mainContent.focus();
-                mainContent.scrollIntoView();
-            }
-        });
-    }
+  // Live region that mirrors status messages
+  const statusRegion = document.createElement('div');
+  statusRegion.setAttribute('aria-live', 'polite');
+  statusRegion.setAttribute('aria-atomic', 'true');
+  statusRegion.className = 'sr-only';
+  statusRegion.id = 'status-region';
+  document.body.appendChild(statusRegion);
 
-    // Add live region for status updates (screen reader announcements)
-    const statusRegion = document.createElement('div');
-    statusRegion.setAttribute('aria-live', 'polite');
-    statusRegion.setAttribute('aria-atomic', 'true');
-    statusRegion.className = 'sr-only';
-    statusRegion.id = 'status-region';
-    document.body.appendChild(statusRegion);
-
-    // Override displayStatusMessage to also update the live region
-    const originalDisplayStatusMessage = displayStatusMessage;
-    displayStatusMessage = (message, isError = false) => {
-        originalDisplayStatusMessage(message, isError);
-        statusRegion.textContent = message;
-    };
+  const originalDisplayStatusMessage = window.displayStatusMessage;
+  window.displayStatusMessage = (message, isError = false) => {
+    originalDisplayStatusMessage(message, isError);
+    statusRegion.textContent = message;
+  };
 };
 
-/**
- * Utility function to close and remove modal overlays from the DOM
- * @param {HTMLElement} modal - The modal overlay element to close
- */
-const closeModal = (modal) => {
-    if (modal && modal.parentNode) {
-        // Remove from DOM
-        modal.remove();
-
-        // Also remove from modal stack if present
-        if (window.modalStack && Array.isArray(window.modalStack)) {
-            const idx = window.modalStack.indexOf(modal);
-            if (idx !== -1) {
-                window.modalStack.splice(idx, 1);
-            }
-        }
-    }
-};
-
-// Error handling for unhandled promise rejections
+// Global error hooks -> toast (non-blocking)
+// Surface unexpected errors so users know something went wrong without opening dev tools.
 window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection:', event.reason);
-    // You could show a user-friendly error message here
+  console.error('Unhandled promise rejection:', event.reason);
+  window.showToast('Unexpected error', String(event.reason && event.reason.message || event.reason || 'Unknown'), 'error');
 });
 
-// Error handling for uncaught errors
 window.addEventListener('error', (event) => {
-    console.error('Uncaught error:', event.error);
-    // You could show a user-friendly error message here
+  console.error('Uncaught error:', event.error);
+  if (!event.message) return;
+  window.showToast('Error', String(event.message), 'error');
 });
-
-
-
-

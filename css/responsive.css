@@ -1,4 +1,6 @@
-/* Phone screens (max-width: 767px) */
+/* Phone screens (max-width: 767px)
+ * Tighten spacing, reduce font sizes, and ensure controls remain tappable.
+ */
 @media (max-width: 767px) {
     .container {
         padding: calc(var(--spacing-unit) * 0.5);
@@ -144,7 +146,9 @@
     }
 }
 
-/* Tablet screens (768px - 1023px) */
+/* Tablet screens (768px - 1023px)
+ * Slightly larger typography and card sizing to balance mid-sized viewports.
+ */
 @media (min-width: 768px) and (max-width: 1023px) {
     .container {
         padding: calc(var(--spacing-unit) * 0.75);

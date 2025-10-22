@@ -1,192 +1,184 @@
 /**
- * Movie Finder API Configuration and Functions
- * Handles all external API calls to TMDB and YouTube Data API
+ * js/api.js
+ * Centralized API utilities + TMDB/YouTube functions with:
+ * - timeouts
+ * - retries (limited)
+ * - sessionStorage caching with TTL
+ * - consistent error shaping
  */
-
-// TMDB API Configuration
-const API_KEY = '5b40b0f5b10231d23aac66a5994c4c05';
-const BASE_URL = 'https://api.themoviedb.org/3';
-const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
-const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original';
-
-// YouTube API Configuration
-const YOUTUBE_API_KEY = 'AIzaSyC3hIy9_Kejs-azrf5bRYw_JZRgCLAVijE'; // Note: This should be secured in production
-const YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search';
-
-// API Endpoints
-const POPULAR_MOVIES_URL = `${BASE_URL}/movie/popular?api_key=${API_KEY}`;
-const SEARCH_MOVIES_URL = `${BASE_URL}/search/movie?api_key=${API_KEY}&query=`;
-const GENRES_URL = `${BASE_URL}/genre/movie/list?api_key=${API_KEY}`;
-const MOVIE_CREDITS_URL = (movieId) => `${BASE_URL}/movie/${movieId}/credits?api_key=${API_KEY}`;
-const PERSON_MOVIES_URL = (personId) => `${BASE_URL}/person/${personId}/movie_credits?api_key=${API_KEY}`;
-
-// Genre Mapping - Maps genre IDs to genre names for easy lookup
-let genreIdToNameMap = {};
-
-// Current sorting option selected by user
-let currentSortOption = null;
 
 /**
- * Handles API errors consistently across all API calls
- * @param {Error} error - The error object
- * @param {string} context - Description of where the error occurred
- * @returns {null} Always returns null to indicate failure
+ * Pull the configuration entries into local constants so we can reference
+ * them without repeatedly accessing the `CONFIG` object.
  */
-const handleApiError = (error, context) => {
-    console.error(`API Error in ${context}:`, error);
+const {
+  TMDB_API_KEY,
+  YOUTUBE_API_KEY,
+  BASE_URL,
+  IMAGE_BASE_URL,
+  BACKDROP_BASE_URL,
+  YOUTUBE_SEARCH_URL,
+  REQUEST_TIMEOUT_MS,
+  CACHE_TTL_MS,
+} = CONFIG;
+
+// Expose image base URLs globally so UI helpers can build absolute image paths.
+window.IMAGE_BASE_URL = IMAGE_BASE_URL;
+window.BACKDROP_BASE_URL = BACKDROP_BASE_URL;
+
+// Static endpoints plus helpers that generate full TMDB request URLs on demand.
+const ENDPOINTS = {
+  POPULAR: `${BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}`,
+  SEARCH: `${BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=`,
+  GENRES: `${BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}`,
+  CREDITS: (id) => `${BASE_URL}/movie/${id}/credits?api_key=${TMDB_API_KEY}`,
+  PERSON_MOVIES: (personId) => `${BASE_URL}/person/${personId}/movie_credits?api_key=${TMDB_API_KEY}`,
+  MOVIE: (id) => `${BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}`,
+  TRENDING_DAY: `${BASE_URL}/trending/movie/day?api_key=${TMDB_API_KEY}`,
+  TRENDING_WEEK: `${BASE_URL}/trending/movie/week?api_key=${TMDB_API_KEY}`,
+  DISCOVER: `${BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}`,
+};
+
+// --- Light session cache ---
+// Store lightweight responses in `sessionStorage` with a TTL so we can skip
+// duplicate network requests during a browsing session.
+const cacheGet = (key) => {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const { value, expiresAt } = JSON.parse(raw);
+    if (Date.now() > expiresAt) {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    return value;
+  } catch {
     return null;
+  }
 };
 
-/**
- * Fetches the cast information for a specific movie
- * @param {number|string} movieId - The TMDB movie ID
- * @returns {Array} Array of cast members (max 10), or empty array on error
- */
+const cacheSet = (key, value, ttl = CACHE_TTL_MS) => {
+  try {
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({ value, expiresAt: Date.now() + ttl })
+    );
+  } catch {
+    // ignore quota errors
+  }
+};
+
+// --- Timeout + retry fetch wrapper ---
+// Adds a fetch timeout plus a simple retry to improve resilience when the API
+// has minor hiccups or slow responses.
+const apiFetch = async (url, { method = 'GET', retries = 1, context = 'api' } = {}) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, { method, signal: controller.signal });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} (${context}): ${txt || res.statusText}`);
+    }
+    return await res.json();
+  } catch (err) {
+    if (retries > 0) {
+      // small backoff
+      await new Promise(r => setTimeout(r, 300));
+      return apiFetch(url, { method, retries: retries - 1, context });
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+// Genre map (id -> name)
+// Updated whenever we fetch a fresh genre list so UI components can look up
+// display names from raw TMDB IDs.
+let genreIdToNameMap = {};
+window.genreIdToNameMap = genreIdToNameMap;
+window.currentSortOption = null;
+
+// --- API functions ---
+// Individual helpers encapsulate TMDB / YouTube requests and hide caching,
+// transformation, and basic error shaping from the rest of the app.
 const fetchMovieCast = async (movieId) => {
-    try {
-        const response = await fetch(MOVIE_CREDITS_URL(movieId));
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        return data.cast.slice(0, 10); // Return first 10 cast members
-    } catch (error) {
-        return handleApiError(error, 'fetchMovieCast');
-    }
+  const cacheKey = `credits:${movieId}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const data = await apiFetch(ENDPOINTS.CREDITS(movieId), { context: 'credits' });
+  const cast = (data.cast || []).slice(0, 10);
+  cacheSet(cacheKey, cast);
+  return cast;
 };
 
-/**
- * Fetches detailed information for a specific movie
- * @param {number|string} movieId - The TMDB movie ID
- * @returns {Object|null} Movie details object, or null on error
- */
 const fetchMovieDetails = async (movieId) => {
-    try {
-        const response = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const movie = await response.json();
-        return movie;
-    } catch (error) {
-        return handleApiError(error, 'fetchMovieDetails');
-    }
+  const cacheKey = `movie:${movieId}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const data = await apiFetch(ENDPOINTS.MOVIE(movieId), { context: 'movie' });
+  cacheSet(cacheKey, data);
+  return data;
 };
 
-/**
- * Fetches the official trailer video ID for a movie from YouTube
- * @param {number|string} movieId - The TMDB movie ID
- * @returns {string|null} YouTube video ID, or null if no trailer found
- * @throws {Error} Throws specific YouTube API errors (quota, forbidden, etc.)
- */
 const fetchMovieTrailer = async (movieId) => {
-    try {
-        // First get movie details to get title and release year
-        const movieResponse = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`);
-        if (!movieResponse.ok) {
-            throw new Error(`Failed to fetch movie details: ${movieResponse.status}`);
-        }
-        const movie = await movieResponse.json();
+  // Try cache per movieId
+  const cacheKey = `trailer:${movieId}`;
+  const cached = cacheGet(cacheKey);
+  if (cached !== null) return cached;
 
-        // Extract release year for YouTube search
-        const releaseYear = movie.release_date ? movie.release_date.substring(0, 4) : '';
+  // Reuse the movie details call so the trailer search can include title + year.
+  const movie = await fetchMovieDetails(movieId);
+  const year = movie.release_date ? movie.release_date.slice(0, 4) : '';
+  const q = `${movie.title} ${year} official trailer`;
 
-        // Search for official trailer on YouTube
-        const searchQuery = `${movie.title} ${releaseYear} official trailer`;
+  const url =
+    `${YOUTUBE_SEARCH_URL}?part=snippet&q=${encodeURIComponent(q)}&maxResults=1&type=video&key=${YOUTUBE_API_KEY}`;
 
-        const youtubeResponse = await fetch(`${YOUTUBE_SEARCH_URL}?part=snippet&q=${encodeURIComponent(searchQuery)}&maxResults=1&type=video&key=${YOUTUBE_API_KEY}`);
-
-        if (!youtubeResponse.ok) {
-            const errorData = await youtubeResponse.json().catch(() => ({}));
-            console.error('YouTube API error:', youtubeResponse.status, errorData);
-
-            // Handle specific YouTube API errors
-            if (youtubeResponse.status === 403) {
-                if (errorData.error?.errors?.[0]?.reason === 'quotaExceeded') {
-                    throw new Error('YouTube API quota exceeded. Please try again later.');
-                } else if (errorData.error?.errors?.[0]?.reason === 'forbidden') {
-                    throw new Error('YouTube API access forbidden. Please check API key permissions.');
-                }
-            } else if (youtubeResponse.status === 400) {
-                throw new Error('Invalid YouTube API request. Please check API key.');
-            } else if (youtubeResponse.status === 404) {
-                throw new Error('YouTube API endpoint not found.');
-            } else {
-                throw new Error(`YouTube API error: ${youtubeResponse.status}`);
-            }
-        }
-
-        const youtubeData = await youtubeResponse.json();
-
-        if (youtubeData.items && youtubeData.items.length > 0) {
-            const videoId = youtubeData.items[0].id.videoId;
-            return videoId;
-        } else {
-            return null;
-        }
-    } catch (error) {
-        console.error('Error fetching movie trailer:', error);
-
-        // Re-throw specific errors, return null for generic errors
-        if (error.message.includes('YouTube API') ||
-            error.message.includes('quota') ||
-            error.message.includes('forbidden') ||
-            error.message.includes('Invalid YouTube API')) {
-            throw error;
-        }
-
-        return null;
-    }
+  try {
+    const data = await apiFetch(url, { context: 'youtube', retries: 0 });
+    const videoId = (data.items && data.items[0] && data.items[0].id && data.items[0].id.videoId) || null;
+    cacheSet(cacheKey, videoId, 1000 * 60 * 60); // 1h cache
+    return videoId;
+  } catch (err) {
+    // Shape readable errors for UI
+    const msg = String(err.message || '');
+    let uiMsg = 'Trailer unavailable.';
+    if (msg.includes('HTTP 403')) uiMsg = 'YouTube quota or permissions issue.';
+    else if (msg.includes('HTTP 400')) uiMsg = 'Invalid YouTube request.';
+    else if (msg.includes('abort')) uiMsg = 'YouTube request timed out.';
+    // Store null to avoid hammering
+    cacheSet(cacheKey, null, 1000 * 60 * 10); // 10 min
+    throw new Error(uiMsg);
+  }
 };
 
-/**
- * Fetches movies for a specific actor and displays them in a modal
- * @param {number|string} actorId - The TMDB person ID
- * @param {string} actorName - The actor's name for display purposes
- */
 const fetchActorMovies = async (actorId, actorName) => {
-    try {
-        const response = await fetch(PERSON_MOVIES_URL(actorId));
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
+  const cacheKey = `person:${actorId}`;
+  const cached = cacheGet(cacheKey);
+  const data = cached || await apiFetch(ENDPOINTS.PERSON_MOVIES(actorId), { context: 'person' });
+  if (!cached) cacheSet(cacheKey, data);
 
-        // Sort movies by popularity and get first 12
-        const movies = data.cast
-            .sort((a, b) => b.popularity - a.popularity)
-            .slice(0, 12);
-
-        showActorMoviesModal(actorName, movies);
-    } catch (error) {
-        console.error('Error fetching actor movies:', error);
-        // Show user-friendly error message
-        alert('Failed to load actor movies. Please try again.');
-    }
+  // High popularity and a small slice keeps the modal concise and snappy.
+  const movies = (data.cast || []).sort((a, b) => (b.popularity || 0) - (a.popularity || 0)).slice(0, 12);
+  showActorMoviesModal(actorName, movies);
 };
 
-/**
- * Fetches available movie genres from TMDB and creates filter buttons
- * Populates the global genreIdToNameMap for genre name lookups
- */
 const fetchGenres = async () => {
-    try {
-        const response = await fetch(GENRES_URL);
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
+  const cacheKey = `genres`;
+  const cached = cacheGet(cacheKey);
+  const data = cached || await apiFetch(ENDPOINTS.GENRES, { context: 'genres' });
+  if (!cached) cacheSet(cacheKey, data, 1000 * 60 * 60 * 24); // 24h
 
-        // Create genre map for easy lookup - maps genre IDs to names
-        data.genres.forEach(genre => {
-            genreIdToNameMap[genre.id] = genre.name;
-        });
-
-        // Create genre filter buttons in the UI
-        createGenreFilterButtons(data.genres);
-    } catch (error) {
-        console.error('Error fetching genres:', error);
-        // Show user-friendly error message
-        alert('Failed to load genre filters. Some features may not work properly.');
-    }
+  genreIdToNameMap = {};
+  (data.genres || []).forEach(g => { genreIdToNameMap[g.id] = g.name; });
+  window.genreIdToNameMap = genreIdToNameMap;
+  createGenreFilterButtons(data.genres || []);
 };
+
+// Expose for other modules
+window.ENDPOINTS = ENDPOINTS;

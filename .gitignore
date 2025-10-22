@@ -1,2 +1,5 @@
-# Environment variables
+# Environment variables file
+# .gitignore
 .env
+.DS_Store
+Thumbs.db
