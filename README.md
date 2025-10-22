@@ -3,12 +3,12 @@
 <div align="center">
   <h2>Discover and explore movies with an intuitive, responsive web application</h2>
 
-  ![GitHub repo size](https://img.shields.io/github/repo-size/yourusername/movie-finder)
-  ![GitHub language count](https://img.shields.io/github/languages/count/yourusername/movie-finder)
-  ![GitHub top language](https://img.shields.io/github/languages/top/yourusername/movie-finder)
-  ![GitHub last commit](https://img.shields.io/github/last-commit/yourusername/movie-finder)
+  ![GitHub repo size](https://img.shields.io/github/repo-size/majdjadalhaq/Movie-Finder)
+  ![GitHub language count](https://img.shields.io/github/languages/count/majdjadalhaq/Movie-Finder)
+  ![GitHub top language](https://img.shields.io/github/languages/top/majdjadalhaq/Movie-Finder)
+  ![GitHub last commit](https://img.shields.io/github/last-commit/majdjadalhaq/Movie-Finder)
 
-  <img src="https://via.placeholder.com/800x400/141414/E50914?text=Movie+Finder+Preview" alt="Movie Finder Preview" width="800">
+  <img src="assets/preview.png" alt="Movie Finder Preview" width="800">
 </div>
 
 ## 📋 Table of Contents
@@ -27,241 +27,219 @@
 
 ## 🎬 About
 
-Movie Finder is a modern, responsive web application that allows users to discover, search, and explore movies. Built with vanilla JavaScript and powered by TMDB and YouTube APIs, it provides a Netflix-inspired interface for browsing movie catalogs, viewing detailed information, watching trailers, and managing personal favorites.
+Movie Finder is a modern, responsive web application built with **vanilla JavaScript**, **HTML5**, and **CSS3**. It allows users to effortlessly discover, search, and explore movies from a vast database. By integrating with **The Movie Database (TMDB) API** and **YouTube Data API**, the application provides a rich, interactive experience, enabling users to browse popular films, view detailed information, watch trailers, and manage a personalized list of favorite movies. Its design prioritizes **user experience**, **accessibility**, and **performance**, offering a seamless and engaging interface reminiscent of popular streaming platforms.
 
 ## ✨ Features
 
 ### Core Functionality
-- **🔍 Movie Search**: Real-time search functionality with instant results
-- **🎬 Popular Movies**: Browse trending and popular movies on initial load
-- **📱 Responsive Design**: Optimized for mobile, tablet, and desktop devices
-- **❤️ Favorites System**: Save and manage personal favorite movies with local storage
-- **🎥 Movie Trailers**: Watch official trailers embedded directly in the app
-- **📊 Detailed Information**: Comprehensive movie details including ratings, cast, and synopsis
-- **🎭 Cast Exploration**: View cast members and discover their other works
-- **🏷️ Genre Filtering**: Filter movies by multiple genres simultaneously
-- **🔄 Sorting Options**: Sort by popularity, release date, rating, and trending
-- **♾️ Infinite Scroll**: Seamless loading of additional movies as you scroll
-- **⬆️ Back to Top**: Convenient navigation button for long lists
+- **🔍 Movie Search**: Real-time, debounced search functionality allows users to find specific movies quickly and efficiently.
+- **🎬 Popular & Trending Movies**: Displays popular movies by default on load, with options to view trending movies by day or week.
+- **📱 Responsive Design**: Optimized for a consistent and enjoyable experience across all devices, from mobile phones to large desktop screens.
+- **❤️ Favorites System**: Users can easily add or remove movies from a persistent favorites list, stored locally for convenience.
+- **🎥 Movie Trailers**: Seamless integration with YouTube allows for direct playback of official movie trailers within the application.
+- **📊 Detailed Information**: Comprehensive movie details, including synopsis, release date, genre, cast, and TMDB ratings, are presented in an intuitive modal interface.
+- **🎭 Cast Exploration**: Clickable cast members within movie details allow users to explore their filmography.
+- **🏷️ Genre Filtering**: Filter movies by one or more genres simultaneously to narrow down search results.
+- **🔄 Sorting Options**: Advanced sorting capabilities by popularity, release date, and rating enhance movie discovery.
+- **♾️ Infinite Scroll**: Automatically loads more movies as the user scrolls, providing a continuous browsing experience.
+- **⬆️ Back to Top**: A convenient floating button for quick navigation back to the top of the page.
 
-### User Experience
-- **🎨 Modern UI**: Netflix-inspired dark theme with smooth animations
+### User Experience & Performance
+- **🎨 Modern UI**: Features a sleek, dark-themed interface with smooth animations and transitions.
+- **♿ Accessibility**: Implemented with ARIA attributes, keyboard navigation, and screen reader support to ensure inclusivity.
+- **⚡ Performance Optimizations**: Utilizes skeleton loaders, lazy image loading, and API response caching with TTL to deliver a fast and fluid experience.
+- **📋 Modal Interface**: Detailed movie information is presented in clean, tabbed modals for organized content display.
+- **🔢 Visual Feedback**: Provides clear loading indicators, error messages, and toast notifications for user actions and system status.
+- **🎯 Interactive Elements**: Engaging hover effects and subtle 3D tilt animations on movie cards enhance visual appeal.
 
-- **♿ Accessibility**: Screen reader support, keyboard navigation, and ARIA labels
-- **⚡ Performance**: Optimized loading with skeleton screens and lazy images
-- **📋 Modal Interface**: Clean, tabbed modals for detailed movie information
-- **🔢 Visual Feedback**: Loading indicators, error messages, and status updates
-- **🎯 Interactive Elements**: Hover effects, 3D tilt animations on movie cards
-- **📊 Favorites Counter**: Visual badge showing number of saved favorites
-
-### Technical Features
-- **🔐 Secure API Handling**: Environment variable configuration for API keys
-- **💾 Persistent Storage**: Local storage for favorites and user preferences
-- **🚀 Progressive Enhancement**: Works without JavaScript for basic functionality
-- **📱 Mobile-First**: Responsive design with touch-friendly interactions
-- **🔍 SEO Friendly**: Semantic HTML and proper meta tags
+### Technical Highlights
+- **🔐 Secure API Handling**: API keys are managed through a centralized configuration, though for client-side applications, they are publicly visible. Best practices for server-side applications would involve proxying requests.
+- **💾 Persistent Storage**: Leverages `sessionStorage` for API response caching and `localStorage` for managing favorite movies.
+- **🚀 Progressive Enhancement**: Designed to offer core functionality even if JavaScript is partially disabled, with full interactivity enabled progressively.
+- **📁 Modular JavaScript**: The codebase is organized into distinct modules (`api.js`, `ui.js`, `modal.js`, `favorites.js`, `app.js`) for better maintainability and scalability.
 
 ## 🎯 Demo
 
-[View Live Demo](https://yourusername.github.io/movie-finder) *(Link to be updated)*
+[View Live Demo](https://majdjadalhaq.github.io/Movie-Finder/) *(Please note: API keys embedded in the demo might have usage limits.)*
 
 ## 🚀 Installation
 
+To set up and run Movie Finder locally, follow these steps:
+
 ### Prerequisites
-- Modern web browser (Chrome 70+, Firefox 65+, Safari 12+, Edge 79+)
-- Internet connection for API access
-- Local development server (optional but recommended)
+- A modern web browser (e.g., Chrome, Firefox, Safari, Edge).
+- Internet connection for API access.
 
 ### Quick Start
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/movie-finder.git
-   cd movie-finder
-   ```
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/majdjadalhaq/Movie-Finder.git
+    cd Movie-Finder
+    ```
 
-2. **Open the application:**
-   ```bash
-   # Option 1: Direct file opening (limited functionality)
-   open index.html
+2.  **Open the application**:
+    Simply open the `index.html` file in your preferred web browser. No local server is strictly required for basic functionality, as it's a client-side application.
+    ```bash
+    open index.html
+    ```
+    Alternatively, navigate to `file:///path/to/Movie-Finder/index.html` in your browser.
 
-   # Option 2: Local server (recommended)
-   # Using Python
-   python -m http.server 8000
-   # Using Node.js
-   npx serve .
-   # Using PHP
-   php -S localhost:8000
-
-   # Then navigate to http://localhost:8000
-   ```
-
-3. **Start exploring movies!** The app works immediately with default API keys.
+3.  **Start exploring movies!** The application should load popular movies automatically.
 
 ## 🔑 API Configuration
 
-This project uses external APIs that require API keys. For production deployment or heavy usage:
+This project relies on external APIs. While default keys are provided for immediate use, it's recommended to obtain your own for consistent performance and to avoid rate limits.
 
 ### 1. Obtain API Keys
 
-- **TMDB API Key**: Sign up at [TMDB](https://www.themoviedb.org/settings/api) and get your API key
-- **YouTube Data API Key**: Create a project at [Google Cloud Console](https://console.cloud.google.com/) and enable the YouTube Data API v3
+-   **TMDB API Key**: Register for a developer account at [The Movie Database (TMDB)](https://www.themoviedb.org/documentation/api) to obtain your API key.
+-   **YouTube Data API Key**: Create a project in the [Google Cloud Console](https://console.cloud.google.com/) and enable the YouTube Data API v3 to get your API key.
 
-### 2. Environment Configuration
+### 2. Configure API Keys
 
-Create a `.env` file in the root directory:
-
-```env
-TMDB_API_KEY=your_tmdb_api_key_here
-YOUTUBE_API_KEY=your_youtube_api_key_here
-```
-
-### 3. Update .gitignore
-
-Ensure your `.env` file is not committed to version control:
-
-```gitignore
-# Environment variables
-.env
-.env.local
-.env.production
-
-# Dependencies
-node_modules/
-
-# Build outputs
-dist/
-build/
-
-# IDE files
-.vscode/
-.idea/
-
-# OS files
-.DS_Store
-Thumbs.db
-```
-
-### 4. Code Integration
-
-Replace hardcoded API keys in `js/api.js` with environment variables:
+Open the `js/config.js` file and replace the placeholder API keys with your newly obtained keys:
 
 ```javascript
-// Instead of:
-const API_KEY = 'your_hardcoded_key';
-
-// Use:
-const API_KEY = process.env.TMDB_API_KEY || 'your_fallback_key';
+// js/config.js
+const CONFIG = {
+  TMDB_API_KEY: 'YOUR_TMDB_API_KEY_HERE', // Replace with your TMDB API key
+  YOUTUBE_API_KEY: 'YOUR_YOUTUBE_API_KEY_HERE', // Replace with your YouTube API key
+  BASE_URL: 'https://api.themoviedb.org/3',
+  IMAGE_BASE_URL: 'https://image.tmdb.org/t/p/w500',
+  BACKDROP_BASE_URL: 'https://image.tmdb.org/t/p/original',
+  YOUTUBE_SEARCH_URL: 'https://www.googleapis.com/youtube/v3/search',
+  REQUEST_TIMEOUT_MS: 12000,
+  CACHE_TTL_MS: 1000 * 60 * 30,
+};
 ```
 
 ## 📖 Usage
 
 ### Basic Navigation
-1. **Browse Movies**: Popular movies load automatically on page load
-2. **Search**: Use the search bar to find specific movies
-3. **View Details**: Click the info icon on any movie card
-4. **Watch Trailers**: Navigate to the trailer tab in movie details
-5. **Add Favorites**: Click the heart icon to save movies
-6. **Filter & Sort**: Use the filter toggle to access genre and sorting options
+1.  **Browse Movies**: Popular movies are displayed upon initial load. Scroll down to load more.
+2.  **Search**: Use the search bar in the header to find movies by title. The search is debounced for a smooth experience.
+3.  **View Details**: Click the info icon (ⓘ) on any movie card to open a modal displaying detailed information, including synopsis, cast, and genres.
+4.  **Watch Trailers**: Within the movie details modal, navigate to the 
+
+trailer tab to watch the official movie trailer.
+5.  **Add to Favorites**: Click the heart icon (♡) on a movie card to add it to your personal favorites list. A filled heart (❤️) indicates it's a favorite.
+6.  **View Favorites**: Click the "Favorites" button in the header to view all your saved movies.
+7.  **Filter & Sort**: Use the "Filter & Sort" toggle to reveal options for filtering movies by genre and sorting them by various criteria.
 
 ### Advanced Features
-- **Genre Filtering**: Select multiple genres to narrow down results
-- **Sorting**: Choose from popularity, rating, release date, or trending
-- **Cast Exploration**: Click on cast members to see their filmography
-- **Infinite Scroll**: Scroll down to load more movies automatically
-- **Keyboard Shortcuts**: Use Escape to close modals, Enter to search
+-   **Genre Filtering**: Select one or more genres to refine the movie list. The application will display movies that belong to any of the selected genres.
+-   **Sorting**: Sort the displayed movies by popularity, release date, or average vote to discover films based on your preferences.
+-   **Cast Exploration**: In the movie details modal, click on an actor's name to see a modal displaying other movies they have starred in.
+-   **Infinite Scroll**: The movie list automatically expands with more results as you scroll down, providing a continuous browsing experience.
+-   **Keyboard Shortcuts**: Use `Escape` to close modals and `Enter` to initiate a search from the search bar.
 
 ### Mobile Usage
-- Touch-friendly interface with swipe gestures
-- Optimized layouts for small screens
-- Fast loading with lazy image loading
+-   The application is designed with a mobile-first approach, ensuring a responsive and touch-friendly interface.
+-   Layouts are optimized for small screens, and features like lazy image loading contribute to fast performance on mobile devices.
 
 ## 📁 Project Structure
 
 ```
 movie-finder/
-├── index.html              # Main HTML structure
+├── index.html              # Main HTML document, serving as the entry point.
 ├── js/
-│   ├── app.js             # Application initialization and main logic
-│   ├── api.js             # TMDB and YouTube API interactions
-│   ├── ui.js              # User interface and DOM manipulation
-│   ├── modal.js           # Modal windows and overlays
-│   └── favorites.js       # Favorites management and persistence
+│   ├── app.js             # Core application logic, initialization, and global error handling.
+│   ├── api.js             # Handles all interactions with TMDB and YouTube APIs, including caching and error handling.
+│   ├── ui.js              # Manages user interface rendering, interactions, and dynamic content updates.
+│   ├── modal.js           # Controls the display and functionality of movie detail modals.
+│   └── favorites.js       # Manages the adding, removing, and persistence of favorite movies using local storage.
 ├── css/
-│   ├── header.css         # Header and navigation styles
-│   ├── movies.css         # Movie cards and grid layouts
-│   ├── modal.css          # Modal and overlay styles
-│   ├── footer.css         # Footer styles
-│   └── responsive.css     # Media queries and responsive design
+│   ├── header.css         # Styles for the application header, search bar, and favorites toggle.
+│   ├── movies.css         # Styles for movie cards, lists, and genre filters.
+│   ├── modal.css          # Styles for the movie detail modal and its components.
+│   ├── footer.css         # Styles for the application footer.
+│   └── responsive.css     # Media queries and responsive adjustments for various screen sizes.
 ├── assets/
-│   └── icon.png           # Application favicon and logo
-├── .gitignore             # Git ignore rules
-├── README.md              # This file
-└── TODO.md                # Development task list
+│   ├── icon.png           # Application favicon and logo.
+│   └── preview.png        # Image used for the README banner.
+├── .gitignore             # Specifies intentionally untracked files to ignore by Git.
+├── README.md              # This comprehensive guide to the project.
+└── TODO.md                # A list of planned features or improvements.
 ```
 
 ## 🛠️ Technologies Used
 
-### Frontend
-- **HTML5**: Semantic markup and accessibility features
-- **CSS3**: Modern styling with CSS Grid, Flexbox, and animations
-- **Vanilla JavaScript**: ES6+ features, modular architecture
+### Frontend Development
+-   **HTML5**: Semantic markup for robust and accessible web content.
+-   **CSS3**: Modern styling techniques including Flexbox and CSS Grid for flexible layouts, transitions, and animations.
+-   **Vanilla JavaScript (ES6+)**: Powers all interactive functionalities, API calls, and dynamic content manipulation, adhering to a modular architecture.
 
-### APIs & Data
-- **TMDB API**: Movie database and metadata
-- **YouTube Data API**: Video trailer integration
-- **Local Storage**: Client-side data persistence
+### APIs & Data Sources
+-   **The Movie Database (TMDB) API**: The primary source for movie data, including popular listings, search results, detailed movie information, and cast data.
+-   **YouTube Data API**: Utilized for searching and embedding official movie trailers directly within the application.
+-   **Local Storage**: Client-side storage mechanism used for persisting user-specific data, such as favorite movies.
+-   **Session Storage**: Used for lightweight, session-based caching of API responses to improve performance.
 
-### Tools & Libraries
-- **Font Awesome**: Icon library for UI elements
-- **Google Fonts**: Roboto font family
-- **Fetch API**: Modern HTTP requests
-- **CSS Variables**: Dynamic theming support
+### External Libraries & Tools
+-   **Font Awesome**: Provides a comprehensive set of vector icons used throughout the user interface.
+-   **Google Fonts**: Integrates the Roboto font family for a clean and modern typography.
+-   **Fetch API**: Modern interface for making network requests, used for all API communications.
+-   **CSS Variables**: Employed for consistent theming and easy adjustments of styles.
 
-### Development
-- **Modular JavaScript**: Separation of concerns
-- **Progressive Enhancement**: Graceful degradation
-- **Performance Monitoring**: Built-in performance tracking
-- **Error Handling**: Comprehensive error management
+### Development Practices
+-   **Modular JavaScript**: Code is logically separated into distinct files, promoting maintainability, reusability, and easier debugging.
+-   **Progressive Enhancement**: Ensures a baseline user experience for all, with advanced features layered on top for capable browsers.
+-   **Performance Monitoring**: Includes basic mechanisms for monitoring and optimizing application performance.
+-   **Robust Error Handling**: Comprehensive error management for API calls and unexpected issues, providing user-friendly feedback via toast notifications.
 
 ## 🤝 Contributing
 
-Contributions are welcome! This project follows a standard open-source workflow:
+Contributions are welcome! If you'd like to contribute to Movie Finder, please follow these guidelines:
 
 ### Development Setup
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Make your changes
-4. Test thoroughly across different devices and browsers
-5. Commit your changes: `git commit -m 'Add some feature'`
-6. Push to the branch: `git push origin feature/your-feature-name`
-7. Open a Pull Request
+1.  **Fork the repository** on GitHub.
+2.  **Clone your forked repository** to your local machine:
+    ```bash
+    git clone https://github.com/your-username/Movie-Finder.git
+    cd Movie-Finder
+    ```
+3.  **Create a new feature branch** for your changes:
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
+4.  **Make your modifications** and enhancements.
+5.  **Test your changes** thoroughly across different browsers and devices to ensure compatibility and responsiveness.
+6.  **Commit your changes** with clear, descriptive commit messages:
+    ```bash
+    git commit -m 'feat: Add new feature or fix bug'
+    ```
+7.  **Push your branch** to your forked repository:
+    ```bash
+    git push origin feature/your-feature-name
+    ```
+8.  **Open a Pull Request** against the `main` branch of the original repository, describing your changes and their benefits.
 
-### Guidelines
-- Follow the existing code style and modular structure
-- Add comments for complex logic
-- Test on multiple browsers and devices
-- Update documentation for new features
-- Ensure accessibility compliance
+### Contribution Guidelines
+-   Adhere to the existing code style and modular architecture.
+-   Provide comments for complex logic or non-obvious implementations.
+-   Ensure cross-browser compatibility and responsiveness.
+-   Update relevant documentation (e.g., this README) for any new features or significant changes.
+-   Prioritize accessibility in all UI and functional implementations.
 
 ### Areas for Contribution
-- Performance optimizations
-- Additional API integrations
-- New UI/UX features
-- Accessibility improvements
-- Internationalization support
-- PWA implementation
+-   Further performance optimizations (e.g., Web Workers for heavy tasks).
+-   Integration with additional movie data APIs or streaming services.
+-   Development of new UI/UX features (e.g., user authentication, personalized recommendations).
+-   Advanced accessibility improvements.
+-   Internationalization (i18n) support for multiple languages.
+-   Progressive Web App (PWA) implementation for offline capabilities.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
 ## 🙏 Acknowledgments
 
-- **TMDB**: For providing comprehensive movie data through their API
-- **YouTube**: For trailer video hosting and API access
-- **Font Awesome**: For the beautiful icon set
-- **Open Source Community**: For inspiration and support
+-   **The Movie Database (TMDB)**: For providing an invaluable and comprehensive movie data API.
+-   **YouTube**: For enabling seamless integration of video trailers.
+-   **Font Awesome**: For the elegant and functional icon library.
+-   **The Open Source Community**: For continuous inspiration, tools, and knowledge sharing.
 
 ---
 
@@ -271,3 +249,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
     <a href="#movie-finder">Back to top</a>
   </p>
 </div>
+
+
